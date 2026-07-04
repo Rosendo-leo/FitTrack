@@ -49,6 +49,12 @@ interface WorkoutDao {
     @Query("SELECT * FROM exercises WHERE templateId = :templateId ORDER BY orderIndex")
     fun observeExercises(templateId: Long): Flow<List<Exercise>>
 
+    @Query("SELECT * FROM exercises WHERE templateId = :templateId ORDER BY orderIndex")
+    suspend fun getExercisesOnce(templateId: Long): List<Exercise>
+
+    @Query("DELETE FROM exercises WHERE id IN (:ids)")
+    suspend fun deleteExercisesByIds(ids: List<Long>)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExercise(exercise: Exercise): Long
 

@@ -12,11 +12,12 @@ Baseado na esquemática em `fittrack-schema.html`.
 - [x] Navegação com bottom bar (5 destinos) + telas placeholder
 - [x] Dashboard inicial conectado ao banco (peso atual + sessões recentes)
 
-## Fase 2 — Treinos (CRUD)
-- [ ] Lista "Meus treinos" e "Pré-definidos"
-- [ ] Editor de treino (criar/editar/excluir template)
-- [ ] Adicionar/reordenar exercícios (drag & drop)
-- [ ] Seed dos presets: PPL, ABC/ABCD, 5x5 StrongLifts, Full Body
+## ✅ Fase 2 — Treinos (CRUD) (concluída)
+- [x] Lista "Meus treinos" e "Pré-definidos" (abas + FAB)
+- [x] Editor de treino (criar/editar/excluir template, categoria/objetivo)
+- [x] Adicionar/remover/reordenar exercícios (botões ↑/↓; drag & drop fica para o polimento)
+- [x] Seed dos presets: PPL (3), ABC (3), ABCD (4), 5x5 StrongLifts (2), Full Body (1)
+- [x] Copiar preset para "Meus treinos" (presets são somente leitura)
 
 ## Fase 3 — Sessão Ativa
 - [ ] Iniciar sessão a partir de um template

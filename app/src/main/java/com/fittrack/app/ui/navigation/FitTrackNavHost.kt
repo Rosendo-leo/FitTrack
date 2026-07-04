@@ -18,15 +18,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.fittrack.app.ui.screens.dashboard.DashboardScreen
 import com.fittrack.app.ui.screens.history.HistoryScreen
 import com.fittrack.app.ui.screens.progress.ProgressScreen
 import com.fittrack.app.ui.screens.settings.SettingsScreen
 import com.fittrack.app.ui.screens.workout.WorkoutsScreen
+import com.fittrack.app.ui.screens.workout.editor.WorkoutEditorScreen
+
+const val WORKOUT_EDITOR_ROUTE = "workout_editor/{templateId}"
+
+fun workoutEditorRoute(templateId: Long) = "workout_editor/$templateId"
 
 sealed class Destination(val route: String, val label: String, val icon: ImageVector) {
     data object Dashboard : Destination("dashboard", "Início", Icons.Default.Home)
@@ -46,8 +53,13 @@ fun FitTrackNavHost() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
 
+    val showBottomBar = Destination.bottomNav.any { dest ->
+        currentDestination?.hierarchy?.any { it.route == dest.route } == true
+    }
+
     Scaffold(
         bottomBar = {
+            if (!showBottomBar) return@Scaffold
             NavigationBar {
                 Destination.bottomNav.forEach { dest ->
                     val selected = currentDestination?.hierarchy
@@ -76,10 +88,22 @@ fun FitTrackNavHost() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Destination.Dashboard.route) { DashboardScreen() }
-            composable(Destination.Workouts.route) { WorkoutsScreen() }
+            composable(Destination.Workouts.route) {
+                WorkoutsScreen(
+                    onOpenEditor = { templateId ->
+                        navController.navigate(workoutEditorRoute(templateId))
+                    }
+                )
+            }
             composable(Destination.Progress.route) { ProgressScreen() }
             composable(Destination.History.route) { HistoryScreen() }
             composable(Destination.Settings.route) { SettingsScreen() }
+            composable(
+                route = WORKOUT_EDITOR_ROUTE,
+                arguments = listOf(navArgument("templateId") { type = NavType.LongType })
+            ) {
+                WorkoutEditorScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }
