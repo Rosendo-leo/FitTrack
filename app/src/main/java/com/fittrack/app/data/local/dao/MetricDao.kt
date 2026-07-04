@@ -18,6 +18,9 @@ interface MetricDao {
     @Query("SELECT * FROM body_metrics ORDER BY date DESC LIMIT 1")
     fun observeLatest(): Flow<BodyMetric?>
 
+    @Query("SELECT * FROM body_metrics ORDER BY date DESC")
+    suspend fun getAllOnce(): List<BodyMetric>
+
     @Query("SELECT * FROM body_metrics WHERE date BETWEEN :from AND :to ORDER BY date")
     fun observeBetween(from: Long, to: Long): Flow<List<BodyMetric>>
 

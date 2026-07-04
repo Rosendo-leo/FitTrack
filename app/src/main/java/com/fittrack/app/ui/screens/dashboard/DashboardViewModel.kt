@@ -6,6 +6,7 @@ import com.fittrack.app.data.local.entities.BodyMetric
 import com.fittrack.app.data.local.entities.WorkoutSession
 import com.fittrack.app.data.repository.MetricsRepository
 import com.fittrack.app.data.repository.WorkoutRepository
+import com.fittrack.app.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +35,7 @@ data class DashboardUiState(
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val metricsRepository: MetricsRepository,
+    private val widgetUpdater: WidgetUpdater,
     workoutRepository: WorkoutRepository
 ) : ViewModel() {
 
@@ -90,6 +92,7 @@ class DashboardViewModel @Inject constructor(
     fun quickRegisterWeight(weightKg: Float) {
         viewModelScope.launch {
             metricsRepository.saveMetric(BodyMetric(weightKg = weightKg))
+            widgetUpdater.refreshAll()
         }
     }
 }

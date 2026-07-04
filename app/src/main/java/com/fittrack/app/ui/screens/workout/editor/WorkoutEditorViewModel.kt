@@ -8,6 +8,7 @@ import com.fittrack.app.data.local.entities.WorkoutCategory
 import com.fittrack.app.data.local.entities.WorkoutGoal
 import com.fittrack.app.data.local.entities.WorkoutTemplate
 import com.fittrack.app.data.repository.WorkoutRepository
+import com.fittrack.app.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +42,7 @@ data class EditorUiState(
 @HiltViewModel
 class WorkoutEditorViewModel @Inject constructor(
     private val repository: WorkoutRepository,
+    private val widgetUpdater: WidgetUpdater,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -184,6 +186,7 @@ class WorkoutEditorViewModel @Inject constructor(
                     )
                 }
             )
+            widgetUpdater.refreshAll()
             _uiState.update { it.copy(saved = true) }
         }
     }

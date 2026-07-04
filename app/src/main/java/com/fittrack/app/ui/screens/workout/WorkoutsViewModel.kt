@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fittrack.app.data.local.entities.WorkoutTemplate
 import com.fittrack.app.data.repository.WorkoutRepository
+import com.fittrack.app.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +20,8 @@ data class WorkoutsUiState(
 
 @HiltViewModel
 class WorkoutsViewModel @Inject constructor(
-    private val repository: WorkoutRepository
+    private val repository: WorkoutRepository,
+    private val widgetUpdater: WidgetUpdater
 ) : ViewModel() {
 
     val uiState: StateFlow<WorkoutsUiState> = combine(
@@ -34,7 +36,10 @@ class WorkoutsViewModel @Inject constructor(
     )
 
     fun deleteTemplate(template: WorkoutTemplate) {
-        viewModelScope.launch { repository.deleteTemplate(template) }
+        viewModelScope.launch {
+            repository.deleteTemplate(template)
+            widgetUpdater.refreshAll()
+        }
     }
 
     fun copyPresetToMine(template: WorkoutTemplate, onCopied: (Long) -> Unit = {}) {
@@ -48,6 +53,7 @@ class WorkoutsViewModel @Inject constructor(
         viewModelScope.launch {
             val active = repository.getActiveSession()
             val sessionId = active?.id ?: repository.startSession(templateId)
+            widgetUpdater.refreshAll()
             onStarted(sessionId)
         }
     }

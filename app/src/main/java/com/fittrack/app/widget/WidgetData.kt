@@ -1,0 +1,113 @@
+package com.fittrack.app.widget
+
+import android.content.Context
+import androidx.glance.appwidget.updateAll
+import com.fittrack.app.data.local.dao.MetricDao
+import com.fittrack.app.data.local.dao.SessionDao
+import com.fittrack.app.data.local.dao.WorkoutDao
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Inject
+import javax.inject.Singleton
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface WidgetEntryPoint {
+    fun workoutDao(): WorkoutDao
+    fun sessionDao(): SessionDao
+    fun metricDao(): MetricDao
+}
+
+internal fun widgetEntryPoint(context: Context): WidgetEntryPoint =
+    EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
+
+// ── Modelos de dados por widget ──
+
+data class WorkoutDayData(val templateName: String?, val exerciseCount: Int)
+
+data class WeightData(val weightKg: Float?, val weekDeltaKg: Float?)
+
+data class WeeklyData(val weekDays: List<Boolean>, val streakDays: Int)
+
+data class ActiveSessionData(
+    val active: Boolean,
+    val templateName: String = "",
+    val totalSets: Int = 0,
+    val totalVolume: Float = 0f
+)
+
+// ── Loaders (consultas one-shot no Room) ──
+
+suspend fun loadWorkoutDayData(context: Context): WorkoutDayData {
+    val entryPoint = widgetEntryPoint(context)
+    val template = entryPoint.workoutDao().getMyTemplatesOnce().firstOrNull()
+        ?: return WorkoutDayData(null, 0)
+    val count = entryPoint.workoutDao().getExercisesOnce(template.id).size
+    return WorkoutDayData(template.name, count)
+}
+
+suspend fun loadWeightData(context: Context): WeightData {
+    val metrics = widgetEntryPoint(context).metricDao().getAllOnce()
+    val latest = metrics.maxByOrNull { it.date } ?: return WeightData(null, null)
+    val target = latest.date - 7L * 24 * 60 * 60 * 1000
+    val delta = metrics
+        .filter { it.id != latest.id }
+        .minByOrNull { kotlin.math.abs(it.date - target) }
+        ?.let { latest.weightKg - it.weightKg }
+    return WeightData(latest.weightKg, delta)
+}
+
+suspend fun loadWeeklyData(context: Context): WeeklyData {
+    val zone = ZoneId.systemDefault()
+    val trained = widgetEntryPoint(context).sessionDao().getFinishedSessionsOnce()
+        .map { Instant.ofEpochMilli(it.startedAt).atZone(zone).toLocalDate() }
+        .toSet()
+
+    val today = LocalDate.now(zone)
+    var streak = 0
+    var cursor = if (today in trained) today else today.minusDays(1)
+    while (cursor in trained) {
+        streak++
+        cursor = cursor.minusDays(1)
+    }
+    val monday = today.with(DayOfWeek.MONDAY)
+    val weekDays = (0..6).map { monday.plusDays(it.toLong()) in trained }
+    return WeeklyData(weekDays, streak)
+}
+
+suspend fun loadActiveSessionData(context: Context): ActiveSessionData {
+    val entryPoint = widgetEntryPoint(context)
+    val session = entryPoint.sessionDao().getActiveSessionOnce()
+        ?: return ActiveSessionData(active = false)
+    val sets = entryPoint.sessionDao().getSetsOnce(session.id)
+    val templateName = session.templateId
+        ?.let { entryPoint.workoutDao().getTemplate(it)?.name }
+        ?: "Treino livre"
+    return ActiveSessionData(
+        active = true,
+        templateName = templateName,
+        totalSets = sets.size,
+        totalVolume = sets.filterNot { it.isWarmup }
+            .fold(0f) { acc, set -> acc + set.weightKg * set.reps }
+    )
+}
+
+/** Atualiza todos os widgets — chamado pelos ViewModels após mutações relevantes. */
+@Singleton
+class WidgetUpdater @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    suspend fun refreshAll() {
+        WorkoutDayWidget().updateAll(context)
+        WeightQuickWidget().updateAll(context)
+        WeeklyProgressWidget().updateAll(context)
+        ActiveSessionWidget().updateAll(context)
+    }
+}

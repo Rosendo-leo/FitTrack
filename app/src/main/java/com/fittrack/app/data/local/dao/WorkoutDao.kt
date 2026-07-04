@@ -26,6 +26,9 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout_templates WHERE isPreset = 0 ORDER BY createdAt DESC")
     fun observeMyTemplates(): Flow<List<WorkoutTemplate>>
 
+    @Query("SELECT * FROM workout_templates WHERE isPreset = 0 ORDER BY createdAt DESC")
+    suspend fun getMyTemplatesOnce(): List<WorkoutTemplate>
+
     @Query("SELECT * FROM workout_templates WHERE isPreset = 1 ORDER BY name")
     fun observePresetTemplates(): Flow<List<WorkoutTemplate>>
 

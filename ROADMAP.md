@@ -49,11 +49,13 @@ Baseado na esquemática em `fittrack-schema.html`.
 - [x] Canais de notificação, permissão POST_NOTIFICATIONS e tela de Ajustes (tema + lembretes)
 - Nota: timer como ForegroundService (sobreviver ao processo) fica para o polimento
 
-## Fase 7 — Widgets (Glance)
-- [ ] Treino do Dia (2×2 / 4×2)
-- [ ] Peso Rápido (2×1 / 2×2)
-- [ ] Progresso Semanal (4×2)
-- [ ] Série Atual (4×2, apenas durante sessão)
+## ✅ Fase 7 — Widgets (Glance) (concluída)
+- [x] Treino do Dia (2×2/4×2): treino mais recente + nº de exercícios + botão iniciar
+- [x] Peso Rápido (2×1/2×2): último peso + delta da semana + botão registrar
+- [x] Progresso Semanal (4×2): ✓/· Seg–Dom + streak 🔥
+- [x] Sessão Atual (4×2): nome do treino, séries e volume; estado vazio quando sem sessão
+- [x] Atualização dos widgets disparada pelos ViewModels após cada mutação relevante
+- Nota: ações abrem o app (deep link direto para iniciar treino/registrar peso fica no polimento)
 
 ## Fase 8 — Backup & Sync
 - [ ] Export/import manual JSON + ZIP (com versão de schema)

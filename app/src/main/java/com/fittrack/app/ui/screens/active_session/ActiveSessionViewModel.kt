@@ -8,6 +8,7 @@ import com.fittrack.app.data.local.entities.SetRecord
 import com.fittrack.app.data.local.entities.WorkoutSession
 import com.fittrack.app.data.repository.WorkoutRepository
 import com.fittrack.app.notifications.NotificationHelper
+import com.fittrack.app.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -49,6 +50,7 @@ data class ActiveSessionUiState(
 class ActiveSessionViewModel @Inject constructor(
     private val repository: WorkoutRepository,
     private val notificationHelper: NotificationHelper,
+    private val widgetUpdater: WidgetUpdater,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -120,6 +122,7 @@ class ActiveSessionViewModel @Inject constructor(
                         notificationHelper.vibrate(300)
                     }
             }
+            widgetUpdater.refreshAll()
             startRest()
         }
     }
@@ -170,6 +173,7 @@ class ActiveSessionViewModel @Inject constructor(
             restJob?.cancel()
             notificationHelper.cancelRestTimer()
             repository.finishSession(session, _uiState.value.totalVolume)
+            widgetUpdater.refreshAll()
             _uiState.update { it.copy(finished = true) }
         }
     }
@@ -179,6 +183,7 @@ class ActiveSessionViewModel @Inject constructor(
             restJob?.cancel()
             notificationHelper.cancelRestTimer()
             repository.deleteSession(sessionId)
+            widgetUpdater.refreshAll()
             _uiState.update { it.copy(finished = true) }
         }
     }

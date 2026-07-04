@@ -25,6 +25,52 @@
                 tools:node="remove" />
         </provider>
 
+        <!-- Widgets (Glance) -->
+        <receiver
+            android:name=".widget.WorkoutDayWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_workout_day_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_workout_day" />
+        </receiver>
+        <receiver
+            android:name=".widget.WeightQuickWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_weight_quick_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_weight_quick" />
+        </receiver>
+        <receiver
+            android:name=".widget.WeeklyProgressWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_weekly_progress_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_weekly_progress" />
+        </receiver>
+        <receiver
+            android:name=".widget.ActiveSessionWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_active_session_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_active_session" />
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

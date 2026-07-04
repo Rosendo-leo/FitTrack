@@ -40,6 +40,12 @@ interface SessionDao {
     @Query("SELECT * FROM workout_sessions WHERE finishedAt IS NULL LIMIT 1")
     suspend fun getActiveSessionOnce(): WorkoutSession?
 
+    @Query("SELECT * FROM workout_sessions WHERE finishedAt IS NOT NULL")
+    suspend fun getFinishedSessionsOnce(): List<WorkoutSession>
+
+    @Query("SELECT * FROM set_records WHERE sessionId = :sessionId ORDER BY exerciseId, setNumber")
+    suspend fun getSetsOnce(sessionId: Long): List<SetRecord>
+
     @Query("SELECT * FROM workout_sessions WHERE startedAt BETWEEN :from AND :to ORDER BY startedAt DESC")
     fun observeSessionsBetween(from: Long, to: Long): Flow<List<WorkoutSession>>
 

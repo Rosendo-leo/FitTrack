@@ -7,4 +7,13 @@
     <string name="nav_progress">Progresso</string>
     <string name="nav_history">Histórico</string>
     <string name="nav_settings">Ajustes</string>
+
+    <string name="widget_workout_day_label">Treino do Dia</string>
+    <string name="widget_workout_day_desc">Seu próximo treino com atalho para iniciar</string>
+    <string name="widget_weight_quick_label">Peso Rápido</string>
+    <string name="widget_weight_quick_desc">Último peso registrado e variação da semana</string>
+    <string name="widget_weekly_progress_label">Progresso Semanal</string>
+    <string name="widget_weekly_progress_desc">Dias treinados na semana e streak atual</string>
+    <string name="widget_active_session_label">Sessão Atual</string>
+    <string name="widget_active_session_desc">Resumo do treino em andamento</string>
 </resources>

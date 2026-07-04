@@ -6,6 +6,7 @@ import com.fittrack.app.data.local.entities.BodyMetric
 import com.fittrack.app.data.local.entities.CardioSession
 import com.fittrack.app.data.local.entities.CardioType
 import com.fittrack.app.data.repository.MetricsRepository
+import com.fittrack.app.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +33,8 @@ data class ProgressUiState(
 
 @HiltViewModel
 class ProgressViewModel @Inject constructor(
-    private val repository: MetricsRepository
+    private val repository: MetricsRepository,
+    private val widgetUpdater: WidgetUpdater
 ) : ViewModel() {
 
     val uiState: StateFlow<ProgressUiState> = combine(
@@ -65,11 +67,15 @@ class ProgressViewModel @Inject constructor(
                     notes = notes?.ifBlank { null }
                 )
             )
+            widgetUpdater.refreshAll()
         }
     }
 
     fun deleteMetric(metric: BodyMetric) {
-        viewModelScope.launch { repository.deleteMetric(metric) }
+        viewModelScope.launch {
+            repository.deleteMetric(metric)
+            widgetUpdater.refreshAll()
+        }
     }
 
     fun saveCardio(
