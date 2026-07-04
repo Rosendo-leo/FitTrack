@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FitTrack</string>
+
+    <string name="nav_dashboard">Início</string>
+    <string name="nav_workouts">Treinos</string>
+    <string name="nav_progress">Progresso</string>
+    <string name="nav_history">Histórico</string>
+    <string name="nav_settings">Ajustes</string>
+</resources>

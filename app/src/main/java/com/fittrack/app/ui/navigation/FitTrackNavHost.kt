@@ -1,0 +1,85 @@
+package com.fittrack.app.ui.navigation
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.fittrack.app.ui.screens.dashboard.DashboardScreen
+import com.fittrack.app.ui.screens.history.HistoryScreen
+import com.fittrack.app.ui.screens.progress.ProgressScreen
+import com.fittrack.app.ui.screens.settings.SettingsScreen
+import com.fittrack.app.ui.screens.workout.WorkoutsScreen
+
+sealed class Destination(val route: String, val label: String, val icon: ImageVector) {
+    data object Dashboard : Destination("dashboard", "Início", Icons.Default.Home)
+    data object Workouts : Destination("workouts", "Treinos", Icons.Default.FitnessCenter)
+    data object Progress : Destination("progress", "Progresso", Icons.Default.TrendingUp)
+    data object History : Destination("history", "Histórico", Icons.Default.CalendarMonth)
+    data object Settings : Destination("settings", "Ajustes", Icons.Default.Settings)
+
+    companion object {
+        val bottomNav = listOf(Dashboard, Workouts, Progress, History, Settings)
+    }
+}
+
+@Composable
+fun FitTrackNavHost() {
+    val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = backStackEntry?.destination
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                Destination.bottomNav.forEach { dest ->
+                    val selected = currentDestination?.hierarchy
+                        ?.any { it.route == dest.route } == true
+                    NavigationBarItem(
+                        selected = selected,
+                        onClick = {
+                            navController.navigate(dest.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        icon = { Icon(dest.icon, contentDescription = dest.label) },
+                        label = { Text(dest.label) }
+                    )
+                }
+            }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = Destination.Dashboard.route,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable(Destination.Dashboard.route) { DashboardScreen() }
+            composable(Destination.Workouts.route) { WorkoutsScreen() }
+            composable(Destination.Progress.route) { ProgressScreen() }
+            composable(Destination.History.route) { HistoryScreen() }
+            composable(Destination.Settings.route) { SettingsScreen() }
+        }
+    }
+}

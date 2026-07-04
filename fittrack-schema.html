@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitTrack — Esquema do App</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg:        #0d0f14;
+    --surface:   #151820;
+    --surface2:  #1c2030;
+    --border:    #252a3a;
+    --accent:    #4f8ef7;
+    --accent2:   #7c5cfc;
+    --green:     #3ecf8e;
+    --orange:    #f7924f;
+    --red:       #f75f5f;
+    --text:      #e8eaf0;
+    --muted:     #6b7394;
+    --tag-bg:    #1e2540;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 40px 24px 80px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 32px;
+    margin-bottom: 48px;
+  }
+  .header-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .header h1 {
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #e8eaf0 0%, #4f8ef7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-sub {
+    color: var(--muted);
+    font-size: 15px;
+    margin-top: 10px;
+  }
+  .stack-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .badge {
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+  }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 48px;
+  }
+  .section-title {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── CARDS ── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color .2s, transform .15s;
+    cursor: default;
+  }
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+  .card-icon {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+  .card-title {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+  .card-desc {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .tag {
+    background: var(--tag-bg);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+  }
+  .tag.accent  { color: var(--accent); }
+  .tag.green   { color: var(--green); }
+  .tag.orange  { color: var(--orange); }
+  .tag.purple  { color: var(--accent2); }
+  .tag.red     { color: var(--red); }
+
+  /* ── ARCH FLOW ── */
+  .arch {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    overflow-x: auto;
+  }
+  .arch-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 10px;
+    flex-wrap: nowrap;
+  }
+  .arch-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .arch-box.blue   { border-color: var(--accent);  color: var(--accent);  }
+  .arch-box.green  { border-color: var(--green);   color: var(--green);   }
+  .arch-box.orange { border-color: var(--orange);  color: var(--orange);  }
+  .arch-box.purple { border-color: var(--accent2); color: var(--accent2); }
+  .arch-box.red    { border-color: var(--red);     color: var(--red);     }
+  .arch-arrow {
+    color: var(--muted);
+    font-size: 18px;
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+  .arch-label {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    padding: 0 6px;
+  }
+
+  /* ── DATA MODEL ── */
+  .tables {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 14px;
+  }
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .table-header {
+    background: var(--surface2);
+    padding: 10px 16px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .table-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .table-body {
+    padding: 12px 16px;
+  }
+  .field-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 3px 0;
+    border-bottom: 1px solid #1a1e2a;
+    font-size: 12px;
+  }
+  .field-row:last-child { border-bottom: none; }
+  .field-name {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+    font-size: 12px;
+  }
+  .field-pk {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--orange);
+    font-size: 10px;
+  }
+  .field-type {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    font-size: 11px;
+    margin-left: auto;
+  }
+
+  /* ── SCREENS ── */
+  .screens {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+  .screen-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    transition: border-color .2s;
+  }
+  .screen-card:hover { border-color: var(--accent2); }
+  .screen-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent2);
+    margin-bottom: 6px;
+  }
+  .screen-name {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .screen-items {
+    list-style: none;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .screen-items li {
+    padding: 2px 0;
+    padding-left: 12px;
+    position: relative;
+  }
+  .screen-items li::before {
+    content: '›';
+    position: absolute;
+    left: 0;
+    color: var(--border);
+  }
+
+  /* ── UPDATE FLOW ── */
+  .flow {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    position: relative;
+  }
+  .flow-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 32px;
+    bottom: -12px;
+    width: 1px;
+    background: var(--border);
+  }
+  .flow-step + .flow-step { margin-top: 24px; }
+  .flow-circle {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .flow-content { padding-top: 4px; }
+  .flow-title { font-weight: 600; font-size: 14px; }
+  .flow-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+  /* ── WIDGETS ── */
+  .widgets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .widget-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .widget-size {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--green);
+    margin-bottom: 6px;
+  }
+  .widget-name { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+  .widget-preview {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 10px;
+    min-height: 60px;
+    line-height: 1.7;
+  }
+  .widget-desc { font-size: 12px; color: var(--muted); }
+
+  /* ── NOTIF ── */
+  .notif-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .notif-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+  }
+  .notif-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    line-height: 1;
+    padding-top: 2px;
+  }
+  .notif-name { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .notif-desc { color: var(--muted); font-size: 12px; }
+
+  /* ── FILE STRUCTURE ── */
+  .file-tree {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 2;
+    overflow-x: auto;
+  }
+  .ft-dir  { color: var(--accent); }
+  .ft-file { color: var(--muted); }
+  .ft-comment { color: #3a4060; }
+  .ft-important { color: var(--green); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    body { padding: 24px 16px 60px; }
+    .header h1 { font-size: 28px; }
+    .arch-row { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-eyebrow">// esquema de arquitetura</div>
+  <h1>FitTrack Android</h1>
+  <p class="header-sub">App de treino, progresso físico e controle de peso — com sync, widgets e auto-update via GitHub.</p>
+  <div class="stack-badges">
+    <span class="badge">Kotlin</span>
+    <span class="badge">Jetpack Compose</span>
+    <span class="badge">Room DB</span>
+    <span class="badge">WorkManager</span>
+    <span class="badge">Google Drive API</span>
+    <span class="badge">Glance (Widgets)</span>
+    <span class="badge">Retrofit</span>
+    <span class="badge">GitHub Releases</span>
+  </div>
+</header>
+
+<!-- POR QUÊ ESSA STACK -->
+<section class="section">
+  <div class="section-title">Justificativa da stack</div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">⚡</div>
+      <div class="card-title">Kotlin + Jetpack Compose</div>
+      <div class="card-desc">UI moderna, declarativa, suporte oficial do Google. Melhor para Material 3 (dark theme, dynamic colors). Você já tem experiência, curva menor.</div>
+      <div class="card-tags"><span class="tag accent">UI moderna</span><span class="tag green">tipado</span></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🗄️</div>
+      <div class="card-title">Room + DataStore</div>
+      <div class="card-desc">Room para dados estruturados (treinos, séries, medidas). DataStore para preferências (tema, notificações). Tudo local, zero perda em updates.</div>
+      <div class="card-tags"><span class="tag green">local</span><span class="tag orange">persistente</span></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">☁️</div>
+      <div class="card-title">Google Drive API</div>
+      <div class="card-desc">Backup automático em JSON/ZIP criptografado na pasta do app no Drive do usuário. Restore em um clique, portável entre dispositivos.</div>
+      <div class="card-tags"><span class="tag accent">sync</span><span class="tag purple">OAuth2</span></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔧</div>
+      <div class="card-title">WorkManager</div>
+      <div class="card-desc">Agendamento confiável de notificações de treino e sync periódico com Drive. Sobrevive a reboots e battery optimization do Android.</div>
+      <div class="card-tags"><span class="tag orange">background</span><span class="tag green">robusto</span></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📦</div>
+      <div class="card-title">GitHub Releases</div>
+      <div class="card-desc">Ao abrir o app, checa a GitHub API por nova versão. Se houver, exibe dialog de permissão antes de baixar e instalar o APK via PackageInstaller.</div>
+      <div class="card-tags"><span class="tag red">UPDATE</span><span class="tag accent">permission-first</span></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🧩</div>
+      <div class="card-title">Glance (Widgets)</div>
+      <div class="card-desc">Framework moderno para widgets Android usando Compose. Permite widgets interativos (registrar peso direto pelo widget) com UI consistente.</div>
+      <div class="card-tags"><span class="tag purple">widget</span><span class="tag green">interativo</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ARQUITETURA GERAL -->
+<section class="section">
+  <div class="section-title">Arquitetura — fluxo de dados</div>
+  <div class="arch">
+    <div style="margin-bottom:18px; color: var(--muted); font-size:13px;">Padrão MVVM + Clean Architecture com camadas bem definidas:</div>
+
+    <div class="arch-row">
+      <div class="arch-box blue">Compose UI</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box purple">ViewModel</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box green">Repository</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box orange">Room DAO</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box orange">SQLite local</div>
+    </div>
+
+    <div class="arch-row" style="margin-top:8px; opacity:.5; font-size:12px; padding-left:310px; font-family: 'JetBrains Mono', monospace; color: var(--muted);">
+      ↑ backup/restore
+    </div>
+
+    <div class="arch-row">
+      <div class="arch-box green">Repository</div>
+      <div class="arch-arrow">⇄</div>
+      <div class="arch-box blue">Drive API</div>
+      <div class="arch-label">JSON/ZIP criptografado</div>
+    </div>
+
+    <div class="arch-row" style="margin-top:12px;">
+      <div class="arch-box red">UpdateChecker</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box blue">GitHub API</div>
+      <div class="arch-label">checa na abertura do app</div>
+    </div>
+
+    <div class="arch-row" style="margin-top:8px;">
+      <div class="arch-box purple">WorkManager</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box orange">NotificationManager</div>
+      <div class="arch-label">lembretes configuráveis</div>
+    </div>
+
+    <div class="arch-row" style="margin-top:8px;">
+      <div class="arch-box purple">Glance Widget</div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box green">Repository</div>
+      <div class="arch-label">lê Room diretamente</div>
+    </div>
+  </div>
+</section>
+
+<!-- MODELO DE DADOS -->
+<section class="section">
+  <div class="section-title">Modelo de dados (Room)</div>
+  <div class="tables">
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-dot" style="background:var(--accent)"></div>
+        WorkoutTemplate
+      </div>
+      <div class="table-body">
+        <div class="field-row"><span class="field-name">id</span><span class="field-pk">PK</span><span class="field-type">Long</span></div>
+        <div class="field-row"><span class="field-name">name</span><span class="field-type">String</span></div>
+        <div class="field-row"><span class="field-name">description</span><span class="field-type">String?</span></div>
+        <div class="field-row"><span class="field-name">category</span><span class="field-type">Enum</span></div>
+        <div class="field-row"><span class="field-name">goal</span><span class="field-type">Enum</span></div>
+        <div class="field-row"><span class="field-name">isPreset</span><span class="field-type">Boolean</span></div>
+        <div class="field-row"><span class="field-name">createdAt</span><span class="field-type">Long</span></div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-dot" style="background:var(--accent2)"></div>
+        Exercise
+      </div>
+      <div class="table-body">
+        <div class="field-row"><span class="field-name">id</span><span class="field-pk">PK</span><span class="field-type">Long</span></div>
+        <div class="field-row"><span class="field-name">templateId</span><span class="field-pk">FK</span><span class="field-type">Long</span></div>
+        <div class="field-row"><span class="field-name">name</span><span class="field-type">String</span></div>
+        <div class="field-row"><span class="field-name">muscleGroup</span><span class="field-type">String</span></div>
+        <div class="field-row"><span class="field-name">notes</span><span class="field-type">String?</span></div>
+        <div class="field-row"><span class="field-name">orderIndex</span><span class="field-type">Int</span></div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-dot" style="background:var(--green)"></div>
+        WorkoutSession
+      </div>
+      <div class="table-body">
+        <div class="field-row"><span class="field-name">id</span><span class="field-pk">PK</span><span class="field-type">Long</span></div>
+        <div class="field-row"><span class="field-name">templateId</span><span class="field-pk">FK</span><span class="field-type">Long</span></div>
+        <div class="field-row"><span class="field-name">startedAt</span><span class="field-type">Long</span></div>
+        <div class="field-row"><span class="field-name">finishedAt</span><span class="field-type">Long?</span></div>
+        <div class="field-row"><span class="field-name">totalVolume</span><span class="field-type">Float</span></div>
+        <div class="field-row"><span class="field-name">notes</span><span class="field-type">String?</span></div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-dot" style="background:var(--orange)"></div>
+        SetRecord
+      </div>
+      <div class="table-body">
+        <div class="field-row"><span class="field-name">id</span><span class="field-pk">PK</span><span class="field-type">Long</span></div>
+        <div class="field-row"><span class="field-name">sessionId</span><span class="field-pk">FK</span><span class="field-type">Long</span></div>
+        <div class="field-row"><span class="field-name">exerciseId</span><span class="field-pk">FK</span><span class="field-type">Long</span></div>
+        <div class="field-row"><span class="field-name">setNumber</span><span class="field-type">Int</span></div>
+        <div class="field-row"><span class="field-name">reps</span><span class="field-type">Int</span></div>
+        <div class="field-row"><span class="field-name">weightKg</span><span class="field-type">Float</span></div>
+        <div class="field-row"><span class="field-name">rpe</span><span class="field-type">Float?</span></div>
+        <div class="field-row"><span class="field-name">isWarmup</span><span class="field-type">Boolean</span></div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-dot" style="background:var(--red)"></div>
+        BodyMetric
+      </div>
+      <div class="table-body">
+        <div class="field-row"><span class="field-name">id</span><span class="field-pk">PK</span><span class="field-type">Long</span></div>
+        <div class="field-row"><span class="field-name">date</span><span class="field-type">Long</span></div>
+        <div class="field-row"><span class="field-name">weightKg</span><span class="field-type">Float</span></div>
+        <div class="field-row"><span class="field-name">bodyFatPct</span><span class="field-type">Float?</span></div>
+        <div class="field-row"><span class="field-name">waistCm</span><span class="field-type">Float?</span></div>
+        <div class="field-row"><span class="field-name">armCm</span><span class="field-type">Float?</span></div>
+        <div class="field-row"><span class="field-name">chestCm</span><span class="field-type">Float?</span></div>
+        <div class="field-row"><span class="field-name">notes</span><span class="field-type">String?</span></div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-dot" style="background:var(--muted)"></div>
+        CardioSession
+      </div>
+      <div class="table-body">
+        <div class="field-row"><span class="field-name">id</span><span class="field-pk">PK</span><span class="field-type">Long</span></div>
+        <div class="field-row"><span class="field-name">type</span><span class="field-type">Enum</span></div>
+        <div class="field-row"><span class="field-name">durationMin</span><span class="field-type">Int</span></div>
+        <div class="field-row"><span class="field-name">distanceKm</span><span class="field-type">Float?</span></div>
+        <div class="field-row"><span class="field-name">calories</span><span class="field-type">Int?</span></div>
+        <div class="field-row"><span class="field-name">avgHeartRate</span><span class="field-type">Int?</span></div>
+        <div class="field-row"><span class="field-name">date</span><span class="field-type">Long</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- TELAS -->
+<section class="section">
+  <div class="section-title">Telas principais</div>
+  <div class="screens">
+
+    <div class="screen-card">
+      <div class="screen-num">01</div>
+      <div class="screen-name">Dashboard</div>
+      <ul class="screen-items">
+        <li>Treino de hoje / próximo</li>
+        <li>Peso atual + delta semana</li>
+        <li>Streak de treinos</li>
+        <li>Gráfico semanal rápido</li>
+        <li>Atalho: registrar peso</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-num">02</div>
+      <div class="screen-name">Treinos</div>
+      <ul class="screen-items">
+        <li>Lista: meus treinos</li>
+        <li>Lista: treinos pré-definidos</li>
+        <li>Editor de treino</li>
+        <li>Adicionar exercícios</li>
+        <li>Reordenar séries (drag)</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-num">03</div>
+      <div class="screen-name">Sessão Ativa</div>
+      <ul class="screen-items">
+        <li>Exercício atual destacado</li>
+        <li>Input: carga + reps por série</li>
+        <li>Timer de descanso</li>
+        <li>PR automático detectado</li>
+        <li>Finalizar / pausar treino</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-num">04</div>
+      <div class="screen-name">Cardio</div>
+      <ul class="screen-items">
+        <li>Registrar corrida/bike/nado</li>
+        <li>Timer integrado</li>
+        <li>Histórico de sessões</li>
+        <li>Gráfico de volume por tipo</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-num">05</div>
+      <div class="screen-name">Progresso Físico</div>
+      <ul class="screen-items">
+        <li>Registrar peso + medidas</li>
+        <li>Gráfico de peso (semanas/meses)</li>
+        <li>Gráfico de IMC</li>
+        <li>Medidas corporais</li>
+        <li>% gordura se informado</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-num">06</div>
+      <div class="screen-name">Histórico</div>
+      <ul class="screen-items">
+        <li>Calendário de treinos</li>
+        <li>Detalhe por sessão</li>
+        <li>Volume total por semana</li>
+        <li>PR por exercício</li>
+        <li>Filtros e busca</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-num">07</div>
+      <div class="screen-name">Configurações</div>
+      <ul class="screen-items">
+        <li>Tema (escuro/claro/sistema)</li>
+        <li>Notificações e horários</li>
+        <li>Unidades (kg/lb, km/mi)</li>
+        <li>Backup/restore Drive</li>
+        <li>Exportar/importar JSON</li>
+        <li>Sobre + versão + update</li>
+      </ul>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-num">08</div>
+      <div class="screen-name">Treinos Pré-definidos</div>
+      <ul class="screen-items">
+        <li>PPL (Push/Pull/Legs)</li>
+        <li>ABC / ABCD splits</li>
+        <li>5x5 StrongLifts</li>
+        <li>Full Body 3x/semana</li>
+        <li>Cada um com descrição e objetivo</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- FLUXO DE ATUALIZAÇÃO -->
+<section class="section">
+  <div class="section-title">Fluxo de atualização via GitHub Releases</div>
+  <div class="flow">
+
+    <div class="flow-step">
+      <div class="flow-circle">🚀</div>
+      <div class="flow-content">
+        <div class="flow-title">App abre</div>
+        <div class="flow-desc">Dispara chamada à GitHub API: <code style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px">GET /repos/{user}/fittrack/releases/latest</code></div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-circle">🔍</div>
+      <div class="flow-content">
+        <div class="flow-title">Compara versões</div>
+        <div class="flow-desc">Compara <code style="color:var(--orange);font-family:'JetBrains Mono',monospace;font-size:11px">tag_name</code> do release com <code style="color:var(--orange);font-family:'JetBrains Mono',monospace;font-size:11px">BuildConfig.VERSION_NAME</code> local usando semver. Se igual, silencioso.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-circle">💬</div>
+      <div class="flow-content">
+        <div class="flow-title">Dialog de permissão</div>
+        <div class="flow-desc">Mostra dialog com: versão nova, release notes do GitHub, tamanho do APK, e botões "Atualizar agora" / "Depois". Nunca instala sem confirmação.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-circle">📥</div>
+      <div class="flow-content">
+        <div class="flow-title">Download + verificação</div>
+        <div class="flow-desc">Baixa o APK com DownloadManager. Verifica SHA256 do asset antes de instalar (hash publicado no release). Progress bar no dialog.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-circle" style="border-color:var(--green); color:var(--green)">✓</div>
+      <div class="flow-content">
+        <div class="flow-title">Instalação via PackageInstaller</div>
+        <div class="flow-desc">Solicita permissão <code style="color:var(--green);font-family:'JetBrains Mono',monospace;font-size:11px">REQUEST_INSTALL_PACKAGES</code> se necessário. Room DB e DataStore não são apagados — o APK só substitui o código.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- WIDGETS -->
+<section class="section">
+  <div class="section-title">Widgets (Glance / AppWidget)</div>
+  <div class="widgets-grid">
+
+    <div class="widget-card">
+      <div class="widget-size">2×2 / 4×2</div>
+      <div class="widget-name">Treino do Dia</div>
+      <div class="widget-preview">
+        📋 Treino A — Peito<br>
+        4 exercícios · 45 min est.<br>
+        [▶ Iniciar treino]
+      </div>
+      <div class="widget-desc">Mostra o próximo treino agendado com botão de iniciar direto pelo widget.</div>
+    </div>
+
+    <div class="widget-card">
+      <div class="widget-size">2×1 / 2×2</div>
+      <div class="widget-name">Peso Rápido</div>
+      <div class="widget-preview">
+        ⚖️ 82.4 kg<br>
+        −0.3 esta semana<br>
+        [+ Registrar peso]
+      </div>
+      <div class="widget-desc">Exibe último peso registrado e abre dialog de entrada diretamente sem abrir o app.</div>
+    </div>
+
+    <div class="widget-card">
+      <div class="widget-size">4×2</div>
+      <div class="widget-name">Progresso Semanal</div>
+      <div class="widget-preview">
+        S M T W T F S<br>
+        ✓ · ✓ ✓ · · ·<br>
+        🔥 Streak: 3 dias
+      </div>
+      <div class="widget-desc">Calendário semanal com marcações de treino e streak atual.</div>
+    </div>
+
+    <div class="widget-card">
+      <div class="widget-size">4×2</div>
+      <div class="widget-name">Série Atual</div>
+      <div class="widget-preview">
+        🏋️ Supino Reto<br>
+        Série 3/4 · 80 kg<br>
+        ⏱ Descanso: 01:23
+      </div>
+      <div class="widget-desc">Ativo apenas durante sessão em curso. Mostra timer de descanso e série atual sem precisar voltar ao app.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- NOTIFICAÇÕES -->
+<section class="section">
+  <div class="section-title">Notificações</div>
+  <div class="notif-list">
+
+    <div class="notif-item">
+      <div class="notif-icon">🏋️</div>
+      <div>
+        <div class="notif-name">Lembrete de treino</div>
+        <div class="notif-desc">Horário configurável por dia da semana. "Hora do Treino A — Peito e Tríceps". Ação direta: abrir sessão.</div>
+      </div>
+    </div>
+
+    <div class="notif-item">
+      <div class="notif-icon">⚖️</div>
+      <div>
+        <div class="notif-name">Registrar peso</div>
+        <div class="notif-desc">Diária, horário fixo (ex: 7h30 ao acordar). Ação: abre dialog de registro diretamente sem abrir o app.</div>
+      </div>
+    </div>
+
+    <div class="notif-item">
+      <div class="notif-icon">⏱️</div>
+      <div>
+        <div class="notif-name">Timer de descanso</div>
+        <div class="notif-desc">Notificação persistente durante sessão ativa mostrando countdown. Vibra ao fim. Configurável por exercício ou global.</div>
+      </div>
+    </div>
+
+    <div class="notif-item">
+      <div class="notif-icon">🔔</div>
+      <div>
+        <div class="notif-name">Nova atualização</div>
+        <div class="notif-desc">Se o app estava em background quando encontrou update, notifica o usuário. Ao tocar, abre dialog de confirmação.</div>
+      </div>
+    </div>
+
+    <div class="notif-item">
+      <div class="notif-icon">☁️</div>
+      <div>
+        <div class="notif-name">Backup realizado</div>
+        <div class="notif-desc">Confirmação silenciosa após sync automático com Drive. Mostra data/hora e tamanho do backup. Configurável (pode desligar).</div>
+      </div>
+    </div>
+
+    <div class="notif-item">
+      <div class="notif-icon">🏆</div>
+      <div>
+        <div class="notif-name">Novo PR!</div>
+        <div class="notif-desc">Detectado automaticamente durante sessão. "Novo recorde: Supino 85 kg × 5". Celebração com vibração e som opcional.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- BACKUP / SYNC -->
+<section class="section">
+  <div class="section-title">Estratégia de backup e migração segura</div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">🔒</div>
+      <div class="card-title">Zero perda em updates</div>
+      <div class="card-desc">Room usa <strong style="color:var(--text)">migrations</strong> versionadas. Ao atualizar schema, uma Migration class garante que os dados existentes são preservados e migrados automaticamente.</div>
+      <div class="card-tags"><span class="tag green">Room Migration</span></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📤</div>
+      <div class="card-title">Export manual</div>
+      <div class="card-desc">Exporta tudo em <strong style="color:var(--text)">JSON comprimido (ZIP)</strong> para qualquer destino: armazenamento local, e-mail, Drive, etc. Inclui versão do schema para compatibilidade futura.</div>
+      <div class="card-tags"><span class="tag orange">JSON + ZIP</span></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">☁️</div>
+      <div class="card-title">Sync Google Drive</div>
+      <div class="card-desc">Automático em segundo plano via WorkManager (frequência configurável). Usa pasta oculta do app no Drive do usuário — não aparece no "Meu Drive".</div>
+      <div class="card-tags"><span class="tag accent">auto-sync</span><span class="tag purple">Drive API</span></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📥</div>
+      <div class="card-title">Restore inteligente</div>
+      <div class="card-desc">Ao restaurar, verifica conflitos entre dados locais e backup. Mostra dialog: substituir tudo / mesclar por data mais recente / cancelar.</div>
+      <div class="card-tags"><span class="tag green">merge</span><span class="tag red">sem perda</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ESTRUTURA DE ARQUIVOS -->
+<section class="section">
+  <div class="section-title">Estrutura de arquivos sugerida</div>
+  <div class="file-tree">
+<span class="ft-dir">app/src/main/</span>
+├── <span class="ft-dir">data/</span>
+│   ├── <span class="ft-dir">local/</span>
+│   │   ├── <span class="ft-important">AppDatabase.kt</span>          <span class="ft-comment">// Room DB central</span>
+│   │   ├── <span class="ft-dir">dao/</span>                        <span class="ft-comment">// WorkoutDao, MetricDao...</span>
+│   │   └── <span class="ft-dir">entities/</span>                   <span class="ft-comment">// WorkoutTemplate, SetRecord...</span>
+│   ├── <span class="ft-dir">remote/</span>
+│   │   ├── <span class="ft-file">GitHubApiService.kt</span>         <span class="ft-comment">// Retrofit — GitHub Releases</span>
+│   │   └── <span class="ft-file">DriveApiService.kt</span>          <span class="ft-comment">// Google Drive backup</span>
+│   └── <span class="ft-dir">repository/</span>
+│       ├── <span class="ft-file">WorkoutRepository.kt</span>
+│       ├── <span class="ft-file">MetricsRepository.kt</span>
+│       └── <span class="ft-file">BackupRepository.kt</span>
+│
+├── <span class="ft-dir">domain/</span>
+│   ├── <span class="ft-dir">model/</span>                       <span class="ft-comment">// data classes sem Room annotations</span>
+│   └── <span class="ft-dir">usecase/</span>                     <span class="ft-comment">// StartWorkoutUseCase, CheckUpdateUseCase...</span>
+│
+├── <span class="ft-dir">ui/</span>
+│   ├── <span class="ft-dir">screens/</span>
+│   │   ├── <span class="ft-dir">dashboard/</span>
+│   │   ├── <span class="ft-dir">workout/</span>
+│   │   ├── <span class="ft-dir">active_session/</span>
+│   │   ├── <span class="ft-dir">progress/</span>
+│   │   ├── <span class="ft-dir">history/</span>
+│   │   └── <span class="ft-dir">settings/</span>
+│   ├── <span class="ft-dir">components/</span>                  <span class="ft-comment">// componentes reutilizáveis</span>
+│   └── <span class="ft-dir">theme/</span>
+│       ├── <span class="ft-important">Color.kt</span>                    <span class="ft-comment">// dark/light palettes</span>
+│       ├── <span class="ft-file">Typography.kt</span>
+│       └── <span class="ft-file">Theme.kt</span>
+│
+├── <span class="ft-dir">worker/</span>
+│   ├── <span class="ft-file">BackupWorker.kt</span>              <span class="ft-comment">// WorkManager — sync Drive</span>
+│   └── <span class="ft-file">ReminderWorker.kt</span>            <span class="ft-comment">// WorkManager — notificações</span>
+│
+├── <span class="ft-dir">widget/</span>
+│   ├── <span class="ft-file">WorkoutDayWidget.kt</span>          <span class="ft-comment">// Glance widget</span>
+│   ├── <span class="ft-file">WeightQuickWidget.kt</span>
+│   └── <span class="ft-file">ActiveSessionWidget.kt</span>
+│
+├── <span class="ft-dir">update/</span>
+│   ├── <span class="ft-important">UpdateChecker.kt</span>             <span class="ft-comment">// checa GitHub na abertura</span>
+│   └── <span class="ft-file">UpdateDialog.kt</span>              <span class="ft-comment">// dialog de permissão</span>
+│
+└── <span class="ft-dir">di/</span>                           <span class="ft-comment">// Hilt modules</span>
+    ├── <span class="ft-file">DatabaseModule.kt</span>
+    ├── <span class="ft-file">NetworkModule.kt</span>
+    └── <span class="ft-file">RepositoryModule.kt</span>
+  </div>
+</section>
+
+<!-- LIBS -->
+<section class="section">
+  <div class="section-title">Dependências (build.gradle)</div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">Core</div>
+      <div class="card-tags" style="flex-direction:column; align-items:flex-start; gap:4px;">
+        <span class="tag accent" style="font-size:12px">androidx.compose.bom:2024.xx</span>
+        <span class="tag green" style="font-size:12px">androidx.room:2.6.x</span>
+        <span class="tag orange" style="font-size:12px">androidx.datastore:1.0.x</span>
+        <span class="tag purple" style="font-size:12px">hilt-android:2.51</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Network</div>
+      <div class="card-tags" style="flex-direction:column; align-items:flex-start; gap:4px;">
+        <span class="tag accent" style="font-size:12px">retrofit2:2.11.x</span>
+        <span class="tag green" style="font-size:12px">okhttp3:4.12.x</span>
+        <span class="tag orange" style="font-size:12px">kotlinx.serialization</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Background + Widgets</div>
+      <div class="card-tags" style="flex-direction:column; align-items:flex-start; gap:4px;">
+        <span class="tag accent" style="font-size:12px">work-runtime-ktx:2.9.x</span>
+        <span class="tag green" style="font-size:12px">glance-appwidget:1.1.x</span>
+        <span class="tag orange" style="font-size:12px">glance-material3</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Google + Gráficos</div>
+      <div class="card-tags" style="flex-direction:column; align-items:flex-start; gap:4px;">
+        <span class="tag purple" style="font-size:12px">google-api-client-android</span>
+        <span class="tag accent" style="font-size:12px">google-api-services-drive</span>
+        <span class="tag green" style="font-size:12px">vico (gráficos Compose)</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="text-align:center; margin-top:56px; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size:11px;">
+  FitTrack Android — esquema v1.0 · gerado com Claude
+</div>
+
+</body>
+</html>
