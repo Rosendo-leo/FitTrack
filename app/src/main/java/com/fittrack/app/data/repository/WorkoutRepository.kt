@@ -1,6 +1,9 @@
 package com.fittrack.app.data.repository
 
+import com.fittrack.app.data.local.dao.ExercisePr
 import com.fittrack.app.data.local.dao.SessionDao
+import com.fittrack.app.data.local.dao.SessionWithTemplateName
+import com.fittrack.app.data.local.dao.SetWithExercise
 import com.fittrack.app.data.local.dao.TemplateWithExercises
 import com.fittrack.app.data.local.dao.WorkoutDao
 import com.fittrack.app.data.local.entities.Exercise
@@ -55,6 +58,15 @@ class WorkoutRepository @Inject constructor(
 
     // ── Sessions ──
     fun observeAllSessions(): Flow<List<WorkoutSession>> = sessionDao.observeAllSessions()
+
+    // ── Histórico ──
+    fun observeFinishedSessions(): Flow<List<SessionWithTemplateName>> =
+        sessionDao.observeFinishedSessionsWithName()
+
+    fun observeSetsWithExercise(sessionId: Long): Flow<List<SetWithExercise>> =
+        sessionDao.observeSetsWithExercise(sessionId)
+
+    fun observeExercisePrs(): Flow<List<ExercisePr>> = sessionDao.observeExercisePrs()
     fun observeActiveSession(): Flow<WorkoutSession?> = sessionDao.observeActiveSession()
     fun observeSets(sessionId: Long): Flow<List<SetRecord>> = sessionDao.observeSets(sessionId)
 

@@ -34,11 +34,12 @@ Baseado na esquemática em `fittrack-schema.html`.
 - [x] Dashboard completo: delta semanal, streak 🔥, marcadores Seg–Dom, gráfico de peso e atalho registrar peso
 - Nota: gráfico de IMC depende da altura do usuário → junto com Ajustes na Fase 10
 
-## Fase 5 — Histórico
-- [ ] Calendário de treinos
-- [ ] Detalhe por sessão
-- [ ] Volume total por semana, PR por exercício
-- [ ] Filtros e busca
+## ✅ Fase 5 — Histórico (concluída)
+- [x] Calendário mensal com dias treinados destacados + navegação entre meses
+- [x] Filtro por dia (toque no calendário) e busca por nome do treino
+- [x] Gráfico de volume por semana (últimas 8 semanas)
+- [x] Recordes por exercício 🏆 (top 10, via query agregada)
+- [x] Detalhe por sessão: data, duração, volume e séries por exercício, com exclusão
 
 ## Fase 6 — Notificações (WorkManager)
 - [ ] Lembrete de treino por dia da semana

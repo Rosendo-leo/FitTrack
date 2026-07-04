@@ -27,6 +27,7 @@ import androidx.navigation.navArgument
 import com.fittrack.app.ui.screens.active_session.ActiveSessionScreen
 import com.fittrack.app.ui.screens.dashboard.DashboardScreen
 import com.fittrack.app.ui.screens.history.HistoryScreen
+import com.fittrack.app.ui.screens.history.SessionDetailScreen
 import com.fittrack.app.ui.screens.progress.ProgressScreen
 import com.fittrack.app.ui.screens.settings.SettingsScreen
 import com.fittrack.app.ui.screens.workout.WorkoutsScreen
@@ -34,9 +35,11 @@ import com.fittrack.app.ui.screens.workout.editor.WorkoutEditorScreen
 
 const val WORKOUT_EDITOR_ROUTE = "workout_editor/{templateId}"
 const val ACTIVE_SESSION_ROUTE = "active_session/{sessionId}"
+const val SESSION_DETAIL_ROUTE = "session_detail/{sessionId}"
 
 fun workoutEditorRoute(templateId: Long) = "workout_editor/$templateId"
 fun activeSessionRoute(sessionId: Long) = "active_session/$sessionId"
+fun sessionDetailRoute(sessionId: Long) = "session_detail/$sessionId"
 
 sealed class Destination(val route: String, val label: String, val icon: ImageVector) {
     data object Dashboard : Destination("dashboard", "Início", Icons.Default.Home)
@@ -108,7 +111,13 @@ fun FitTrackNavHost() {
                 )
             }
             composable(Destination.Progress.route) { ProgressScreen() }
-            composable(Destination.History.route) { HistoryScreen() }
+            composable(Destination.History.route) {
+                HistoryScreen(
+                    onOpenSession = { sessionId ->
+                        navController.navigate(sessionDetailRoute(sessionId))
+                    }
+                )
+            }
             composable(Destination.Settings.route) { SettingsScreen() }
             composable(
                 route = WORKOUT_EDITOR_ROUTE,
@@ -121,6 +130,12 @@ fun FitTrackNavHost() {
                 arguments = listOf(navArgument("sessionId") { type = NavType.LongType })
             ) {
                 ActiveSessionScreen(onExit = { navController.popBackStack() })
+            }
+            composable(
+                route = SESSION_DETAIL_ROUTE,
+                arguments = listOf(navArgument("sessionId") { type = NavType.LongType })
+            ) {
+                SessionDetailScreen(onBack = { navController.popBackStack() })
             }
         }
     }
