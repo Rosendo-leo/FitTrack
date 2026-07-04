@@ -42,4 +42,13 @@ class WorkoutsViewModel @Inject constructor(
             repository.duplicateAsMine(template.id)?.let(onCopied)
         }
     }
+
+    /** Inicia (ou retoma, se já houver uma ativa) uma sessão e devolve o id dela. */
+    fun startSession(templateId: Long, onStarted: (sessionId: Long) -> Unit) {
+        viewModelScope.launch {
+            val active = repository.getActiveSession()
+            val sessionId = active?.id ?: repository.startSession(templateId)
+            onStarted(sessionId)
+        }
+    }
 }

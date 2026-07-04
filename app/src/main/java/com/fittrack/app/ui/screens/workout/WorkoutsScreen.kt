@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
@@ -43,6 +44,7 @@ import com.fittrack.app.ui.common.label
 @Composable
 fun WorkoutsScreen(
     onOpenEditor: (Long) -> Unit,
+    onOpenSession: (sessionId: Long) -> Unit,
     viewModel: WorkoutsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -84,6 +86,17 @@ fun WorkoutsScreen(
                     emptyMessage = "Nenhum treino ainda.\nCrie um no botão + ou copie um pré-definido.",
                     onClick = { onOpenEditor(it.id) },
                     trailing = { template ->
+                        IconButton(onClick = {
+                            viewModel.startSession(template.id) { sessionId ->
+                                onOpenSession(sessionId)
+                            }
+                        }) {
+                            Icon(
+                                Icons.Default.PlayArrow,
+                                contentDescription = "Iniciar treino",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                         IconButton(onClick = { templateToDelete = template }) {
                             Icon(
                                 Icons.Default.Delete,

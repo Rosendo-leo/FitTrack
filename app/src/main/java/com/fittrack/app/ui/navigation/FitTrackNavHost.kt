@@ -24,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.fittrack.app.ui.screens.active_session.ActiveSessionScreen
 import com.fittrack.app.ui.screens.dashboard.DashboardScreen
 import com.fittrack.app.ui.screens.history.HistoryScreen
 import com.fittrack.app.ui.screens.progress.ProgressScreen
@@ -32,8 +33,10 @@ import com.fittrack.app.ui.screens.workout.WorkoutsScreen
 import com.fittrack.app.ui.screens.workout.editor.WorkoutEditorScreen
 
 const val WORKOUT_EDITOR_ROUTE = "workout_editor/{templateId}"
+const val ACTIVE_SESSION_ROUTE = "active_session/{sessionId}"
 
 fun workoutEditorRoute(templateId: Long) = "workout_editor/$templateId"
+fun activeSessionRoute(sessionId: Long) = "active_session/$sessionId"
 
 sealed class Destination(val route: String, val label: String, val icon: ImageVector) {
     data object Dashboard : Destination("dashboard", "Início", Icons.Default.Home)
@@ -87,11 +90,20 @@ fun FitTrackNavHost() {
             startDestination = Destination.Dashboard.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Destination.Dashboard.route) { DashboardScreen() }
+            composable(Destination.Dashboard.route) {
+                DashboardScreen(
+                    onOpenSession = { sessionId ->
+                        navController.navigate(activeSessionRoute(sessionId))
+                    }
+                )
+            }
             composable(Destination.Workouts.route) {
                 WorkoutsScreen(
                     onOpenEditor = { templateId ->
                         navController.navigate(workoutEditorRoute(templateId))
+                    },
+                    onOpenSession = { sessionId ->
+                        navController.navigate(activeSessionRoute(sessionId))
                     }
                 )
             }
@@ -103,6 +115,12 @@ fun FitTrackNavHost() {
                 arguments = listOf(navArgument("templateId") { type = NavType.LongType })
             ) {
                 WorkoutEditorScreen(onBack = { navController.popBackStack() })
+            }
+            composable(
+                route = ACTIVE_SESSION_ROUTE,
+                arguments = listOf(navArgument("sessionId") { type = NavType.LongType })
+            ) {
+                ActiveSessionScreen(onExit = { navController.popBackStack() })
             }
         }
     }

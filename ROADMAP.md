@@ -19,18 +19,20 @@ Baseado na esquemática em `fittrack-schema.html`.
 - [x] Seed dos presets: PPL (3), ABC (3), ABCD (4), 5x5 StrongLifts (2), Full Body (1)
 - [x] Copiar preset para "Meus treinos" (presets são somente leitura)
 
-## Fase 3 — Sessão Ativa
-- [ ] Iniciar sessão a partir de um template
-- [ ] Input de carga + reps por série, marcar warmup/RPE
-- [ ] Timer de descanso (por exercício ou global)
-- [ ] Detecção automática de PR
-- [ ] Finalizar/pausar treino + cálculo de volume total
+## ✅ Fase 3 — Sessão Ativa (concluída)
+- [x] Iniciar sessão a partir de um template (▶ na lista; retoma se já houver ativa)
+- [x] Input de carga + reps por série, marcar aquecimento (RPE fica no polimento)
+- [x] Timer de descanso global ajustável (−/+15s, pular)
+- [x] Detecção automática de PR (snackbar 🏆)
+- [x] Finalizar (volume total) / descartar / pausar (sair e retomar pelo Dashboard)
+- [x] Cronômetro da sessão + volume e séries em tempo real
 
-## Fase 4 — Progresso & Cardio
-- [ ] Registro de peso + medidas corporais
-- [ ] Registro de cardio (corrida/bike/nado) com timer
-- [ ] Gráficos com Vico (peso, IMC, volume por tipo)
-- [ ] Dashboard completo (delta semanal, streak, gráfico rápido)
+## ✅ Fase 4 — Progresso & Cardio (concluída)
+- [x] Registro de peso + medidas corporais (% gordura, cintura, braço, peito)
+- [x] Registro de cardio (tipo, duração, distância, calorias, FC) — timer integrado fica na Fase 10
+- [x] Gráfico de peso (componente Canvas próprio; migrar para Vico no polimento) + minutos por tipo de cardio
+- [x] Dashboard completo: delta semanal, streak 🔥, marcadores Seg–Dom, gráfico de peso e atalho registrar peso
+- Nota: gráfico de IMC depende da altura do usuário → junto com Ajustes na Fase 10
 
 ## Fase 5 — Histórico
 - [ ] Calendário de treinos
