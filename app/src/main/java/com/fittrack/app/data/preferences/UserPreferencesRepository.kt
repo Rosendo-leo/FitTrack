@@ -4,7 +4,9 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -18,7 +20,16 @@ data class UserPreferences(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val weightUnit: WeightUnit = WeightUnit.KG,
     val distanceUnit: DistanceUnit = DistanceUnit.KM,
-    val notificationsEnabled: Boolean = true
+    val notificationsEnabled: Boolean = true,
+    /** Lembrete de treino: dias da semana habilitados (ISO: 1=Seg … 7=Dom). */
+    val workoutReminderEnabled: Boolean = false,
+    val workoutReminderDays: Set<Int> = emptySet(),
+    val workoutReminderHour: Int = 18,
+    val workoutReminderMinute: Int = 0,
+    /** Lembrete diário de registro de peso. */
+    val weightReminderEnabled: Boolean = false,
+    val weightReminderHour: Int = 7,
+    val weightReminderMinute: Int = 30
 )
 
 @Singleton
@@ -30,6 +41,13 @@ class UserPreferencesRepository @Inject constructor(
         val WEIGHT_UNIT = stringPreferencesKey("weight_unit")
         val DISTANCE_UNIT = stringPreferencesKey("distance_unit")
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
+        val WORKOUT_REMINDER_ENABLED = booleanPreferencesKey("workout_reminder_enabled")
+        val WORKOUT_REMINDER_DAYS = stringSetPreferencesKey("workout_reminder_days")
+        val WORKOUT_REMINDER_HOUR = intPreferencesKey("workout_reminder_hour")
+        val WORKOUT_REMINDER_MINUTE = intPreferencesKey("workout_reminder_minute")
+        val WEIGHT_REMINDER_ENABLED = booleanPreferencesKey("weight_reminder_enabled")
+        val WEIGHT_REMINDER_HOUR = intPreferencesKey("weight_reminder_hour")
+        val WEIGHT_REMINDER_MINUTE = intPreferencesKey("weight_reminder_minute")
     }
 
     val preferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -40,7 +58,15 @@ class UserPreferencesRepository @Inject constructor(
                 ?: WeightUnit.KG,
             distanceUnit = prefs[Keys.DISTANCE_UNIT]?.let { runCatching { DistanceUnit.valueOf(it) }.getOrNull() }
                 ?: DistanceUnit.KM,
-            notificationsEnabled = prefs[Keys.NOTIFICATIONS_ENABLED] ?: true
+            notificationsEnabled = prefs[Keys.NOTIFICATIONS_ENABLED] ?: true,
+            workoutReminderEnabled = prefs[Keys.WORKOUT_REMINDER_ENABLED] ?: false,
+            workoutReminderDays = prefs[Keys.WORKOUT_REMINDER_DAYS]
+                ?.mapNotNull { it.toIntOrNull() }?.toSet() ?: emptySet(),
+            workoutReminderHour = prefs[Keys.WORKOUT_REMINDER_HOUR] ?: 18,
+            workoutReminderMinute = prefs[Keys.WORKOUT_REMINDER_MINUTE] ?: 0,
+            weightReminderEnabled = prefs[Keys.WEIGHT_REMINDER_ENABLED] ?: false,
+            weightReminderHour = prefs[Keys.WEIGHT_REMINDER_HOUR] ?: 7,
+            weightReminderMinute = prefs[Keys.WEIGHT_REMINDER_MINUTE] ?: 30
         )
     }
 
@@ -58,5 +84,22 @@ class UserPreferencesRepository @Inject constructor(
 
     suspend fun setNotificationsEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.NOTIFICATIONS_ENABLED] = enabled }
+    }
+
+    suspend fun setWorkoutReminder(enabled: Boolean, days: Set<Int>, hour: Int, minute: Int) {
+        dataStore.edit {
+            it[Keys.WORKOUT_REMINDER_ENABLED] = enabled
+            it[Keys.WORKOUT_REMINDER_DAYS] = days.map(Int::toString).toSet()
+            it[Keys.WORKOUT_REMINDER_HOUR] = hour
+            it[Keys.WORKOUT_REMINDER_MINUTE] = minute
+        }
+    }
+
+    suspend fun setWeightReminder(enabled: Boolean, hour: Int, minute: Int) {
+        dataStore.edit {
+            it[Keys.WEIGHT_REMINDER_ENABLED] = enabled
+            it[Keys.WEIGHT_REMINDER_HOUR] = hour
+            it[Keys.WEIGHT_REMINDER_MINUTE] = minute
+        }
     }
 }

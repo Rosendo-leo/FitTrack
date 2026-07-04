@@ -1,0 +1,152 @@
+package com.fittrack.app.notifications
+
+import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import com.fittrack.app.R
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class NotificationHelper @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    companion object {
+        const val CHANNEL_REMINDERS = "reminders"
+        const val CHANNEL_REST_TIMER = "rest_timer"
+        const val CHANNEL_ACHIEVEMENTS = "achievements"
+
+        const val ID_WORKOUT_REMINDER = 1001
+        const val ID_WEIGHT_REMINDER = 1002
+        const val ID_REST_TIMER = 1003
+        const val ID_PR = 1004
+    }
+
+    init {
+        ensureChannels()
+    }
+
+    private fun ensureChannels() {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_REMINDERS,
+                "Lembretes",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply { description = "Lembretes de treino e de registro de peso" }
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_REST_TIMER,
+                "Timer de descanso",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply { description = "Contagem do descanso durante a sessão"; setSound(null, null) }
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_ACHIEVEMENTS,
+                "Conquistas",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply { description = "Novos recordes pessoais" }
+        )
+    }
+
+    private fun canNotify(): Boolean =
+        Build.VERSION.SDK_INT < 33 || ActivityCompat.checkSelfPermission(
+            context, Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+
+    private fun openAppIntent(): PendingIntent {
+        val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            ?.apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP }
+        return PendingIntent.getActivity(
+            context, 0, launch,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+    }
+
+    private fun builder(channel: String): NotificationCompat.Builder =
+        NotificationCompat.Builder(context, channel)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentIntent(openAppIntent())
+            .setAutoCancel(true)
+
+    fun showWorkoutReminder() {
+        if (!canNotify()) return
+        NotificationManagerCompat.from(context).notify(
+            ID_WORKOUT_REMINDER,
+            builder(CHANNEL_REMINDERS)
+                .setContentTitle("Hora do treino! 💪")
+                .setContentText("Seu treino de hoje está esperando. Bora?")
+                .build()
+        )
+    }
+
+    fun showWeightReminder() {
+        if (!canNotify()) return
+        NotificationManagerCompat.from(context).notify(
+            ID_WEIGHT_REMINDER,
+            builder(CHANNEL_REMINDERS)
+                .setContentTitle("Registrar peso ⚖️")
+                .setContentText("Registre seu peso de hoje para acompanhar o progresso.")
+                .build()
+        )
+    }
+
+    fun showPr(exerciseName: String, weightKg: Float, reps: Int) {
+        if (!canNotify()) return
+        NotificationManagerCompat.from(context).notify(
+            ID_PR,
+            builder(CHANNEL_ACHIEVEMENTS)
+                .setContentTitle("Novo recorde! 🏆")
+                .setContentText(
+                    "%s: %.1f kg × %d".format(exerciseName, weightKg, reps)
+                )
+                .build()
+        )
+    }
+
+    /** Notificação persistente e silenciosa com o countdown do descanso. */
+    fun showRestTimer(remainingSeconds: Int, totalSeconds: Int) {
+        if (!canNotify()) return
+        NotificationManagerCompat.from(context).notify(
+            ID_REST_TIMER,
+            builder(CHANNEL_REST_TIMER)
+                .setContentTitle("Descanso ⏱️")
+                .setContentText(
+                    "%02d:%02d restantes".format(remainingSeconds / 60, remainingSeconds % 60)
+                )
+                .setProgress(totalSeconds, totalSeconds - remainingSeconds, false)
+                .setOngoing(true)
+                .setAutoCancel(false)
+                .setOnlyAlertOnce(true)
+                .build()
+        )
+    }
+
+    fun cancelRestTimer() {
+        NotificationManagerCompat.from(context).cancel(ID_REST_TIMER)
+    }
+
+    fun vibrate(durationMs: Long = 500) {
+        val vibrator = if (Build.VERSION.SDK_INT >= 31) {
+            context.getSystemService(VibratorManager::class.java).defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Vibrator::class.java)
+        }
+        vibrator.vibrate(VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE))
+    }
+}

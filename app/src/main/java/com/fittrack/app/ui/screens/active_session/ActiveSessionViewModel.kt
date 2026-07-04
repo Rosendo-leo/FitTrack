@@ -7,6 +7,7 @@ import com.fittrack.app.data.local.entities.Exercise
 import com.fittrack.app.data.local.entities.SetRecord
 import com.fittrack.app.data.local.entities.WorkoutSession
 import com.fittrack.app.data.repository.WorkoutRepository
+import com.fittrack.app.notifications.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -47,6 +48,7 @@ data class ActiveSessionUiState(
 @HiltViewModel
 class ActiveSessionViewModel @Inject constructor(
     private val repository: WorkoutRepository,
+    private val notificationHelper: NotificationHelper,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -112,7 +114,11 @@ class ActiveSessionViewModel @Inject constructor(
             if (isPr) {
                 _uiState.value.exercises
                     .firstOrNull { it.exercise.id == exerciseId }
-                    ?.let { _prEvents.emit(it.exercise.name) }
+                    ?.let { ews ->
+                        _prEvents.emit(ews.exercise.name)
+                        notificationHelper.showPr(ews.exercise.name, weightKg, reps)
+                        notificationHelper.vibrate(300)
+                    }
             }
             startRest()
         }
@@ -136,15 +142,24 @@ class ActiveSessionViewModel @Inject constructor(
             val total = _uiState.value.restTotalSeconds
             for (remaining in total downTo 1) {
                 _uiState.update { it.copy(restSecondsLeft = remaining) }
+                notificationHelper.showRestTimer(remaining, total)
                 delay(1_000)
             }
             _uiState.update { it.copy(restSecondsLeft = null) }
+            notificationHelper.cancelRestTimer()
+            notificationHelper.vibrate()
         }
     }
 
     fun skipRest() {
         restJob?.cancel()
         _uiState.update { it.copy(restSecondsLeft = null) }
+        notificationHelper.cancelRestTimer()
+    }
+
+    override fun onCleared() {
+        notificationHelper.cancelRestTimer()
+        super.onCleared()
     }
 
     // ── Encerramento ──
@@ -153,6 +168,7 @@ class ActiveSessionViewModel @Inject constructor(
         val session = _uiState.value.session ?: return
         viewModelScope.launch {
             restJob?.cancel()
+            notificationHelper.cancelRestTimer()
             repository.finishSession(session, _uiState.value.totalVolume)
             _uiState.update { it.copy(finished = true) }
         }
@@ -161,6 +177,7 @@ class ActiveSessionViewModel @Inject constructor(
     fun discardSession() {
         viewModelScope.launch {
             restJob?.cancel()
+            notificationHelper.cancelRestTimer()
             repository.deleteSession(sessionId)
             _uiState.update { it.copy(finished = true) }
         }

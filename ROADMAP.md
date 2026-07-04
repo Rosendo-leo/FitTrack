@@ -41,11 +41,13 @@ Baseado na esquemática em `fittrack-schema.html`.
 - [x] Recordes por exercício 🏆 (top 10, via query agregada)
 - [x] Detalhe por sessão: data, duração, volume e séries por exercício, com exclusão
 
-## Fase 6 — Notificações (WorkManager)
-- [ ] Lembrete de treino por dia da semana
-- [ ] Lembrete diário de peso
-- [ ] Notificação persistente do timer de descanso
-- [ ] Celebração de PR
+## ✅ Fase 6 — Notificações (WorkManager) (concluída)
+- [x] Lembrete de treino por dia da semana (chips Seg–Dom + horário, reagenda no boot do app)
+- [x] Lembrete diário de peso com horário configurável
+- [x] Notificação persistente do timer de descanso (silenciosa, com progresso) + vibração ao fim
+- [x] Notificação de PR 🏆 com vibração
+- [x] Canais de notificação, permissão POST_NOTIFICATIONS e tela de Ajustes (tema + lembretes)
+- Nota: timer como ForegroundService (sobreviver ao processo) fica para o polimento
 
 ## Fase 7 — Widgets (Glance)
 - [ ] Treino do Dia (2×2 / 4×2)

@@ -1,0 +1,30 @@
+package com.fittrack.app.worker
+
+import android.content.Context
+import androidx.hilt.work.HiltWorker
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
+import com.fittrack.app.data.preferences.UserPreferencesRepository
+import com.fittrack.app.notifications.NotificationHelper
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import kotlinx.coroutines.flow.first
+
+@HiltWorker
+class WeightReminderWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters,
+    private val preferencesRepository: UserPreferencesRepository,
+    private val notificationHelper: NotificationHelper,
+    private val scheduler: ReminderScheduler
+) : CoroutineWorker(context, params) {
+
+    override suspend fun doWork(): Result {
+        val prefs = preferencesRepository.preferences.first()
+        if (prefs.weightReminderEnabled) {
+            notificationHelper.showWeightReminder()
+        }
+        scheduler.scheduleWeightReminder(prefs)
+        return Result.success()
+    }
+}
