@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
@@ -15,6 +16,8 @@ import com.fittrack.app.data.preferences.UserPreferences
 import com.fittrack.app.data.preferences.UserPreferencesRepository
 import com.fittrack.app.ui.navigation.FitTrackNavHost
 import com.fittrack.app.ui.theme.FitTrackTheme
+import com.fittrack.app.update.UpdateDialogHost
+import com.fittrack.app.update.UpdateViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -26,6 +29,14 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* opcional */ }
+
+    private val updateViewModel: UpdateViewModel by viewModels()
+
+    override fun onResume() {
+        super.onResume()
+        // Retoma o fluxo de update se o usuário voltou da tela de permissão de instalação
+        updateViewModel.onInstallPermissionResult()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +52,7 @@ class MainActivity : ComponentActivity() {
                 .collectAsState(initial = UserPreferences())
             FitTrackTheme(themeMode = prefs.themeMode) {
                 FitTrackNavHost()
+                UpdateDialogHost(updateViewModel)
             }
         }
     }

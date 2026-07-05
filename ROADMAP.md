@@ -63,12 +63,13 @@ Baseado na esquemática em `fittrack-schema.html`.
 - [ ] Sync automático via WorkManager
 - [ ] Restore com resolução de conflitos (substituir/mesclar/cancelar)
 
-## Fase 9 — Auto-update via GitHub Releases
-- [ ] `UpdateChecker` (Retrofit → GitHub API, semver)
-- [ ] Dialog de permissão com release notes
-- [ ] Download + verificação SHA256
-- [ ] Instalação via PackageInstaller
-- [ ] Notificação de update em background
+## ✅ Fase 9 — Auto-update via GitHub Releases (concluída)
+- [x] `UpdateChecker` (Retrofit → GitHub API, comparação semver com BuildConfig.VERSION_NAME)
+- [x] Dialog de permissão com release notes, tamanho do APK e "Atualizar agora / Depois"
+- [x] Download com progresso + verificação SHA256 do asset publicado
+- [x] Instalação via instalador do sistema (FileProvider) + fluxo REQUEST_INSTALL_PACKAGES
+- [x] CI/CD: workflows de build e release assinada no GitHub Actions
+- Nota: notificação de update em background fica junto com o BOOT receiver no polimento
 
 ## Fase 10 — Polimento & Release
 - [ ] Configurações completas (unidades kg/lb e km/mi, horários)
