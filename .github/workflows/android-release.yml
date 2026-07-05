@@ -30,12 +30,13 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/keystore.jks"
-            echo "KEYSTORE_FILE=$RUNNER_TEMP/keystore.jks" >> "$GITHUB_ENV"
-          else
-            echo "Sem keystore nos secrets — o APK sairá NÃO assinado."
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Secret KEYSTORE_BASE64 ausente. Um APK sem assinatura não instala no Android."
+            echo "::error::Cadastre KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS e KEY_PASSWORD em Settings > Secrets > Actions."
+            exit 1
           fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/keystore.jks"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/keystore.jks" >> "$GITHUB_ENV"
 
       - name: Build release APK
         env:
