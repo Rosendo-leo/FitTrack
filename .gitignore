@@ -11,4 +11,6 @@ captures/
 *.aab
 *.keystore
 *.jks
+*.pfx
+fittrack-keystore-base64.txt
 !debug.keystore
