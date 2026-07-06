@@ -96,7 +96,7 @@ class ActiveSessionViewModel @Inject constructor(
         }
     }
 
-    fun registerSet(exerciseId: Long, weightKg: Float, reps: Int, isWarmup: Boolean) {
+    fun registerSet(exerciseId: Long, weightKg: Float, reps: Int, isWarmup: Boolean, rpe: Float? = null) {
         if (weightKg < 0 || reps <= 0) return
         viewModelScope.launch {
             val isPr = !isWarmup && repository.isPersonalRecord(exerciseId, weightKg)
@@ -110,6 +110,7 @@ class ActiveSessionViewModel @Inject constructor(
                     setNumber = setNumber,
                     reps = reps,
                     weightKg = weightKg,
+                    rpe = rpe,
                     isWarmup = isWarmup
                 )
             )

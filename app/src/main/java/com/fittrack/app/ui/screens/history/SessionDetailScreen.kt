@@ -35,6 +35,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.fittrack.app.ui.common.LocalUserPreferences
+import com.fittrack.app.ui.common.format
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -50,6 +52,7 @@ fun SessionDetailScreen(
     viewModel: SessionDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val weightUnit = LocalUserPreferences.current.weightUnit
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(state.deleted) {
@@ -106,7 +109,7 @@ fun SessionDetailScreen(
                             Text(
                                 listOfNotNull(
                                     durationMin?.let { "Duração: $it min" },
-                                    "Volume: %.0f kg".format(session.totalVolume)
+                                    "Volume: ${weightUnit.format(session.totalVolume, decimals = 0)}"
                                 ).joinToString(" · "),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -146,7 +149,8 @@ fun SessionDetailScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    "%.1f kg × %d".format(item.set.weightKg, item.set.reps) +
+                                    "${weightUnit.format(item.set.weightKg)} × ${item.set.reps}" +
+                                        (item.set.rpe?.let { "  @ RPE %.1f".format(it) } ?: "") +
                                         if (item.set.isWarmup) "  (aquecimento)" else "",
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.padding(start = 12.dp)

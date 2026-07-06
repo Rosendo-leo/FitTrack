@@ -11,9 +11,11 @@ import com.fittrack.app.data.backup.DriveAuthManager
 import com.fittrack.app.data.backup.DriveBackupRepository
 import com.fittrack.app.data.backup.RestoreMode
 import com.fittrack.app.data.backup.RestoreSummary
+import com.fittrack.app.data.preferences.DistanceUnit
 import com.fittrack.app.data.preferences.ThemeMode
 import com.fittrack.app.data.preferences.UserPreferences
 import com.fittrack.app.data.preferences.UserPreferencesRepository
+import com.fittrack.app.data.preferences.WeightUnit
 import com.fittrack.app.widget.WidgetUpdater
 import com.fittrack.app.worker.DriveSyncWorker
 import com.fittrack.app.worker.ReminderScheduler
@@ -66,6 +68,18 @@ class SettingsViewModel @Inject constructor(
 
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { preferencesRepository.setThemeMode(mode) }
+    }
+
+    fun setWeightUnit(unit: WeightUnit) {
+        viewModelScope.launch { preferencesRepository.setWeightUnit(unit) }
+    }
+
+    fun setDistanceUnit(unit: DistanceUnit) {
+        viewModelScope.launch { preferencesRepository.setDistanceUnit(unit) }
+    }
+
+    fun setHeightCm(heightCm: Float) {
+        viewModelScope.launch { preferencesRepository.setHeightCm(heightCm) }
     }
 
     fun setWorkoutReminder(enabled: Boolean, days: Set<Int>, hour: Int, minute: Int) {

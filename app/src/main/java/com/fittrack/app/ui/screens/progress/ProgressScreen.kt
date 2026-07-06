@@ -45,7 +45,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fittrack.app.data.local.entities.CardioType
+import com.fittrack.app.data.preferences.DistanceUnit
+import com.fittrack.app.data.preferences.WeightUnit
+import com.fittrack.app.ui.common.LocalUserPreferences
+import com.fittrack.app.ui.common.format
 import com.fittrack.app.ui.common.label
+import com.fittrack.app.ui.common.suffix
+import com.fittrack.app.ui.common.toKg
+import com.fittrack.app.ui.common.toKm
 import com.fittrack.app.ui.components.SimpleLineChart
 import java.time.Instant
 import java.time.ZoneId
@@ -101,40 +108,82 @@ fun ProgressScreen(viewModel: ProgressViewModel = hiltViewModel()) {
         }
     }
 
+    val prefs = LocalUserPreferences.current
     if (showMetricDialog) {
         MetricDialog(
+            weightUnit = prefs.weightUnit,
             onDismiss = { showMetricDialog = false },
             onConfirm = { weight, fat, waist, arm, chest, notes ->
-                viewModel.saveMetric(weight, fat, waist, arm, chest, notes)
+                viewModel.saveMetric(prefs.weightUnit.toKg(weight), fat, waist, arm, chest, notes)
                 showMetricDialog = false
             }
         )
     }
     if (showCardioDialog) {
         CardioDialog(
+            distanceUnit = prefs.distanceUnit,
             onDismiss = { showCardioDialog = false },
             onConfirm = { type, duration, distance, calories, hr ->
-                viewModel.saveCardio(type, duration, distance, calories, hr)
+                viewModel.saveCardio(
+                    type, duration, distance?.let { prefs.distanceUnit.toKm(it) }, calories, hr
+                )
                 showCardioDialog = false
             }
         )
     }
 }
 
+/** IMC e classificação segundo a OMS. */
+private fun bmiLabel(bmi: Float): String = when {
+    bmi < 18.5f -> "Abaixo do peso"
+    bmi < 25f -> "Peso normal"
+    bmi < 30f -> "Sobrepeso"
+    else -> "Obesidade"
+}
+
 @Composable
 private fun BodyTab(state: ProgressUiState, viewModel: ProgressViewModel) {
+    val prefs = LocalUserPreferences.current
+    val weightUnit = prefs.weightUnit
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        val latestWeight = state.metrics.maxByOrNull { it.date }?.weightKg
+        if (latestWeight != null && prefs.heightCm > 0f) {
+            item {
+                val heightM = prefs.heightCm / 100f
+                val bmi = latestWeight / (heightM * heightM)
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("IMC", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "%.1f".format(bmi),
+                                style = MaterialTheme.typography.headlineMedium
+                            )
+                        }
+                        Text(
+                            bmiLabel(bmi),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Evolução do peso", style = MaterialTheme.typography.titleMedium)
                     SimpleLineChart(
                         points = state.weightPoints,
-                        valueFormatter = { "%.1f kg".format(it) }
+                        valueFormatter = { weightUnit.format(it) }
                     )
                 }
             }
@@ -147,7 +196,7 @@ private fun BodyTab(state: ProgressUiState, viewModel: ProgressViewModel) {
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "%.1f kg — %s".format(metric.weightKg, formatDate(metric.date)),
+                            "${weightUnit.format(metric.weightKg)} — ${formatDate(metric.date)}",
                             style = MaterialTheme.typography.titleMedium
                         )
                         val details = listOfNotNull(
@@ -189,6 +238,7 @@ private fun BodyTab(state: ProgressUiState, viewModel: ProgressViewModel) {
 
 @Composable
 private fun CardioTab(state: ProgressUiState, viewModel: ProgressViewModel) {
+    val distanceUnit = LocalUserPreferences.current.distanceUnit
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
@@ -229,7 +279,7 @@ private fun CardioTab(state: ProgressUiState, viewModel: ProgressViewModel) {
                         )
                         val details = listOfNotNull(
                             formatDate(session.date),
-                            session.distanceKm?.let { "%.1f km".format(it) },
+                            session.distanceKm?.let { distanceUnit.format(it) },
                             session.calories?.let { "$it kcal" },
                             session.avgHeartRate?.let { "$it bpm" }
                         ).joinToString(" · ")
@@ -263,9 +313,10 @@ private fun CardioTab(state: ProgressUiState, viewModel: ProgressViewModel) {
 
 @Composable
 private fun MetricDialog(
+    weightUnit: WeightUnit,
     onDismiss: () -> Unit,
     onConfirm: (
-        weightKg: Float, bodyFatPct: Float?, waistCm: Float?,
+        weight: Float, bodyFatPct: Float?, waistCm: Float?,
         armCm: Float?, chestCm: Float?, notes: String?
     ) -> Unit
 ) {
@@ -284,7 +335,7 @@ private fun MetricDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
-                NumberField(weight, { weight = it }, "Peso (kg) *")
+                NumberField(weight, { weight = it }, "Peso (${weightUnit.suffix}) *")
                 NumberField(fat, { fat = it }, "% de gordura")
                 NumberField(waist, { waist = it }, "Cintura (cm)")
                 NumberField(arm, { arm = it }, "Braço (cm)")
@@ -321,9 +372,10 @@ private fun MetricDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CardioDialog(
+    distanceUnit: DistanceUnit,
     onDismiss: () -> Unit,
     onConfirm: (
-        type: CardioType, durationMin: Int, distanceKm: Float?,
+        type: CardioType, durationMin: Int, distance: Float?,
         calories: Int?, avgHeartRate: Int?
     ) -> Unit
 ) {
@@ -372,7 +424,7 @@ private fun CardioDialog(
                     }
                 }
                 NumberField(duration, { duration = it }, "Duração (min) *")
-                NumberField(distance, { distance = it }, "Distância (km)")
+                NumberField(distance, { distance = it }, "Distância (${distanceUnit.suffix})")
                 NumberField(calories, { calories = it }, "Calorias")
                 NumberField(heartRate, { heartRate = it }, "FC média (bpm)")
             }

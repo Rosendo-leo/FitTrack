@@ -50,6 +50,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fittrack.app.data.local.entities.SetRecord
+import com.fittrack.app.data.preferences.WeightUnit
+import com.fittrack.app.ui.common.LocalUserPreferences
+import com.fittrack.app.ui.common.format
+import com.fittrack.app.ui.common.suffix
+import com.fittrack.app.ui.common.toKg
 import kotlinx.coroutines.delay
 import java.util.Locale
 
@@ -72,6 +77,7 @@ fun ActiveSessionScreen(
     viewModel: ActiveSessionViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val weightUnit = LocalUserPreferences.current.weightUnit
     val snackbarHostState = remember { SnackbarHostState() }
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
@@ -156,7 +162,7 @@ fun ActiveSessionScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            "Volume: %.0f kg".format(state.totalVolume),
+                            "Volume: ${weightUnit.format(state.totalVolume, decimals = 0)}",
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
@@ -183,8 +189,11 @@ fun ActiveSessionScreen(
                 items(state.exercises, key = { it.exercise.id }) { item ->
                     ExerciseCard(
                         item = item,
-                        onRegisterSet = { weight, reps, warmup ->
-                            viewModel.registerSet(item.exercise.id, weight, reps, warmup)
+                        weightUnit = weightUnit,
+                        onRegisterSet = { weight, reps, warmup, rpe ->
+                            viewModel.registerSet(
+                                item.exercise.id, weightUnit.toKg(weight), reps, warmup, rpe
+                            )
                         },
                         onDeleteSet = viewModel::deleteSet
                     )
@@ -199,8 +208,8 @@ fun ActiveSessionScreen(
             title = { Text("Finalizar treino") },
             text = {
                 Text(
-                    "Volume total: %.0f kg em %d séries.\nFinalizar a sessão?"
-                        .format(state.totalVolume, state.totalSets)
+                    "Volume total: ${weightUnit.format(state.totalVolume, decimals = 0)} " +
+                        "em ${state.totalSets} séries.\nFinalizar a sessão?"
                 )
             },
             confirmButton = {
@@ -267,11 +276,13 @@ private fun RestTimerBar(remaining: Int, total: Int, onSkip: () -> Unit) {
 @Composable
 private fun ExerciseCard(
     item: ExerciseWithSets,
-    onRegisterSet: (weightKg: Float, reps: Int, isWarmup: Boolean) -> Unit,
+    weightUnit: WeightUnit,
+    onRegisterSet: (weight: Float, reps: Int, isWarmup: Boolean, rpe: Float?) -> Unit,
     onDeleteSet: (SetRecord) -> Unit
 ) {
     var weightText by rememberSaveable(item.exercise.id) { mutableStateOf("") }
     var repsText by rememberSaveable(item.exercise.id) { mutableStateOf("") }
+    var rpeText by rememberSaveable(item.exercise.id) { mutableStateOf("") }
     var isWarmup by rememberSaveable(item.exercise.id) { mutableStateOf(false) }
 
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -301,7 +312,8 @@ private fun ExerciseCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "%.1f kg × %d".format(set.weightKg, set.reps) +
+                        "${weightUnit.format(set.weightKg)} × ${set.reps}" +
+                            (set.rpe?.let { "  @ RPE %.1f".format(it) } ?: "") +
                             if (set.isWarmup) "  (aquecimento)" else "",
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.weight(1f).padding(start = 12.dp)
@@ -323,7 +335,7 @@ private fun ExerciseCard(
                 OutlinedTextField(
                     value = weightText,
                     onValueChange = { weightText = it },
-                    label = { Text("kg") },
+                    label = { Text(weightUnit.suffix) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
                     modifier = Modifier.weight(1f)
@@ -336,6 +348,14 @@ private fun ExerciseCard(
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
+                OutlinedTextField(
+                    value = rpeText,
+                    onValueChange = { rpeText = it },
+                    label = { Text("RPE") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.weight(0.8f)
+                )
                 FilterChip(
                     selected = isWarmup,
                     onClick = { isWarmup = !isWarmup },
@@ -345,9 +365,12 @@ private fun ExerciseCard(
                     onClick = {
                         val weight = weightText.replace(',', '.').toFloatOrNull()
                         val reps = repsText.toIntOrNull()
+                        val rpe = rpeText.replace(',', '.').toFloatOrNull()
+                            ?.coerceIn(1f, 10f)
                         if (weight != null && reps != null && reps > 0) {
-                            onRegisterSet(weight, reps, isWarmup)
+                            onRegisterSet(weight, reps, isWarmup, rpe)
                             repsText = ""
+                            rpeText = ""
                         }
                     },
                     enabled = weightText.isNotBlank() && repsText.isNotBlank()

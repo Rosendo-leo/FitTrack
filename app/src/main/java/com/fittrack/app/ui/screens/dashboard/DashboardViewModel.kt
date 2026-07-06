@@ -2,6 +2,7 @@ package com.fittrack.app.ui.screens.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fittrack.app.data.local.dao.SessionWithTemplateName
 import com.fittrack.app.data.local.entities.BodyMetric
 import com.fittrack.app.data.local.entities.WorkoutSession
 import com.fittrack.app.data.repository.MetricsRepository
@@ -28,7 +29,7 @@ data class DashboardUiState(
     /** Seg..Dom da semana atual: true = treinou no dia. */
     val weekDays: List<Boolean> = List(7) { false },
     val weightPoints: List<Pair<Long, Float>> = emptyList(),
-    val recentSessions: List<WorkoutSession> = emptyList(),
+    val recentSessions: List<SessionWithTemplateName> = emptyList(),
     val activeSession: WorkoutSession? = null
 )
 
@@ -42,8 +43,9 @@ class DashboardViewModel @Inject constructor(
     val uiState: StateFlow<DashboardUiState> = combine(
         metricsRepository.observeAllMetrics(),
         workoutRepository.observeAllSessions(),
-        workoutRepository.observeActiveSession()
-    ) { metrics, sessions, active ->
+        workoutRepository.observeActiveSession(),
+        workoutRepository.observeFinishedSessions()
+    ) { metrics, sessions, active, finishedWithName ->
         val zone = ZoneId.systemDefault()
         val latest = metrics.maxByOrNull { it.date }
 
@@ -79,7 +81,7 @@ class DashboardViewModel @Inject constructor(
             weightPoints = metrics.sortedBy { it.date }
                 .takeLast(30)
                 .map { it.date to it.weightKg },
-            recentSessions = sessions.filter { it.finishedAt != null }.take(5),
+            recentSessions = finishedWithName.take(5),
             activeSession = active
         )
     }.stateIn(

@@ -72,8 +72,16 @@ Baseado na esquemática em `fittrack-schema.html`.
 - [x] CI/CD: workflows de build e release assinada no GitHub Actions
 - Nota: notificação de update em background fica junto com o BOOT receiver no polimento
 
-## Fase 10 — Polimento & Release
-- [ ] Configurações completas (unidades kg/lb e km/mi, horários)
-- [ ] Ícone final, splash screen
+## Fase 10 — Polimento & Release (em andamento)
+- [x] Configurações completas (unidades kg/lb e km/mi aplicadas em todas as telas, altura do usuário)
+- [x] IMC no Progresso (peso mais recente + altura dos Ajustes, classificação OMS)
+- [x] RPE por série na sessão ativa (campo opcional; exibido no histórico)
+- [x] Splash screen (core-splashscreen)
+- [x] Dashboard: treinos recentes com nome e data
+- [ ] Ícone final
+- [ ] Widgets respeitando a unidade de peso escolhida
 - [ ] Testes (DAOs, repositórios, detecção de PR)
 - [ ] Assinatura do APK + primeiro GitHub Release (v1.0)
+- Pendências de polimento anteriores: drag & drop de exercícios, timer de cardio,
+  gráfico com Vico, timer de descanso como ForegroundService, deep links dos widgets,
+  notificação de update em background + BOOT receiver

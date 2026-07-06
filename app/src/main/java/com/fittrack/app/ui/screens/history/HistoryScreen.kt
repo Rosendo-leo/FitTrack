@@ -32,6 +32,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.fittrack.app.ui.common.LocalUserPreferences
+import com.fittrack.app.ui.common.format
 import com.fittrack.app.ui.components.SimpleLineChart
 import java.time.Instant
 import java.time.LocalDate
@@ -50,6 +52,7 @@ fun HistoryScreen(
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val weightUnit = LocalUserPreferences.current.weightUnit
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -111,7 +114,7 @@ fun HistoryScreen(
                                 .toEpochMilli()
                             millis to weekVolume.volumeKg
                         },
-                        valueFormatter = { "%.0f kg".format(it) }
+                        valueFormatter = { weightUnit.format(it, decimals = 0) }
                     )
                 }
             }
@@ -130,7 +133,7 @@ fun HistoryScreen(
                             ) {
                                 Text(pr.exerciseName, style = MaterialTheme.typography.bodyLarge)
                                 Text(
-                                    "%.1f kg × %d".format(pr.weightKg, pr.reps),
+                                    "${weightUnit.format(pr.weightKg)} × ${pr.reps}",
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.SemiBold
@@ -173,7 +176,7 @@ fun HistoryScreen(
                         listOfNotNull(
                             started.format(dayFormatter),
                             durationMin?.let { "$it min" },
-                            "volume %.0f kg".format(item.session.totalVolume)
+                            "volume ${weightUnit.format(item.session.totalVolume, decimals = 0)}"
                         ).joinToString(" · "),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant

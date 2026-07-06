@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -17,6 +18,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -32,12 +34,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fittrack.app.BuildConfig
 import com.fittrack.app.data.backup.RestoreMode
+import com.fittrack.app.data.preferences.DistanceUnit
 import com.fittrack.app.data.preferences.ThemeMode
+import com.fittrack.app.data.preferences.WeightUnit
 import java.text.DateFormat
 import java.util.Date
 
@@ -50,6 +55,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val backupState by viewModel.backupState.collectAsStateWithLifecycle()
     var showWorkoutTimeDialog by rememberSaveable { mutableStateOf(false) }
     var showWeightTimeDialog by rememberSaveable { mutableStateOf(false) }
+    var showHeightDialog by rememberSaveable { mutableStateOf(false) }
 
     val context = LocalContext.current
     LaunchedEffect(backupState.message) {
@@ -102,6 +108,81 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                                     count = options.size
                                 )
                             ) { Text(label) }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Unidades & perfil ──
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text("Unidades & perfil", style = MaterialTheme.typography.titleMedium)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Peso", style = MaterialTheme.typography.bodyLarge)
+                        SingleChoiceSegmentedButtonRow {
+                            val options = listOf(WeightUnit.KG to "kg", WeightUnit.LB to "lb")
+                            options.forEachIndexed { index, (unit, label) ->
+                                SegmentedButton(
+                                    selected = prefs.weightUnit == unit,
+                                    onClick = { viewModel.setWeightUnit(unit) },
+                                    shape = SegmentedButtonDefaults.itemShape(
+                                        index = index,
+                                        count = options.size
+                                    )
+                                ) { Text(label) }
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Distância", style = MaterialTheme.typography.bodyLarge)
+                        SingleChoiceSegmentedButtonRow {
+                            val options = listOf(DistanceUnit.KM to "km", DistanceUnit.MI to "mi")
+                            options.forEachIndexed { index, (unit, label) ->
+                                SegmentedButton(
+                                    selected = prefs.distanceUnit == unit,
+                                    onClick = { viewModel.setDistanceUnit(unit) },
+                                    shape = SegmentedButtonDefaults.itemShape(
+                                        index = index,
+                                        count = options.size
+                                    )
+                                ) { Text(label) }
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("Altura", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "Usada para calcular o IMC",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        TextButton(onClick = { showHeightDialog = true }) {
+                            Text(
+                                if (prefs.heightCm > 0f) "%.0f cm".format(prefs.heightCm)
+                                else "Informar"
+                            )
                         }
                     }
                 }
@@ -333,6 +414,17 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         }
     }
 
+    if (showHeightDialog) {
+        HeightDialog(
+            initialCm = prefs.heightCm,
+            onDismiss = { showHeightDialog = false },
+            onConfirm = { cm ->
+                viewModel.setHeightCm(cm)
+                showHeightDialog = false
+            }
+        )
+    }
+
     if (backupState.pendingRestore != null) {
         AlertDialog(
             onDismissRequest = viewModel::cancelRestore,
@@ -386,6 +478,40 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             }
         )
     }
+}
+
+@Composable
+private fun HeightDialog(
+    initialCm: Float,
+    onDismiss: () -> Unit,
+    onConfirm: (Float) -> Unit
+) {
+    var heightText by rememberSaveable {
+        mutableStateOf(if (initialCm > 0f) "%.0f".format(initialCm) else "")
+    }
+    val parsed = heightText.replace(',', '.').toFloatOrNull()
+    val valid = parsed != null && parsed in 80f..250f
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Altura") },
+        text = {
+            OutlinedTextField(
+                value = heightText,
+                onValueChange = { heightText = it },
+                label = { Text("Altura (cm)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { parsed?.let(onConfirm) },
+                enabled = valid
+            ) { Text("Salvar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

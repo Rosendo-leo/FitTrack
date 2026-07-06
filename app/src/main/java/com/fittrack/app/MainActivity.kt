@@ -10,10 +10,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import com.fittrack.app.data.preferences.UserPreferences
 import com.fittrack.app.data.preferences.UserPreferencesRepository
+import com.fittrack.app.ui.common.LocalUserPreferences
 import com.fittrack.app.ui.navigation.FitTrackNavHost
 import com.fittrack.app.ui.theme.FitTrackTheme
 import com.fittrack.app.update.UpdateDialogHost
@@ -39,6 +42,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         if (Build.VERSION.SDK_INT >= 33 &&
@@ -50,9 +54,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             val prefs by userPreferencesRepository.preferences
                 .collectAsState(initial = UserPreferences())
-            FitTrackTheme(themeMode = prefs.themeMode) {
-                FitTrackNavHost()
-                UpdateDialogHost(updateViewModel)
+            CompositionLocalProvider(LocalUserPreferences provides prefs) {
+                FitTrackTheme(themeMode = prefs.themeMode) {
+                    FitTrackNavHost()
+                    UpdateDialogHost(updateViewModel)
+                }
             }
         }
     }

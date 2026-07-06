@@ -33,9 +33,19 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.fittrack.app.data.preferences.WeightUnit
+import com.fittrack.app.ui.common.LocalUserPreferences
+import com.fittrack.app.ui.common.format
+import com.fittrack.app.ui.common.suffix
+import com.fittrack.app.ui.common.toKg
 import com.fittrack.app.ui.components.SimpleLineChart
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 private val weekLetters = listOf("S", "T", "Q", "Q", "S", "S", "D")
+private val recentFormatter = DateTimeFormatter.ofPattern("dd/MM · HH:mm", Locale("pt", "BR"))
 
 @Composable
 fun DashboardScreen(
@@ -43,6 +53,7 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val weightUnit = LocalUserPreferences.current.weightUnit
     var showWeightDialog by rememberSaveable { mutableStateOf(false) }
 
     LazyColumn(
@@ -81,13 +92,13 @@ fun DashboardScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Peso atual", style = MaterialTheme.typography.labelSmall)
                         Text(
-                            state.latestWeight?.let { "%.1f kg".format(it.weightKg) } ?: "—",
+                            state.latestWeight?.let { weightUnit.format(it.weightKg) } ?: "—",
                             style = MaterialTheme.typography.headlineMedium
                         )
                         state.weekDeltaKg?.let { delta ->
                             val sign = if (delta > 0) "+" else ""
                             Text(
-                                "$sign%.1f kg na semana".format(delta),
+                                "$sign${weightUnit.format(delta)} na semana",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = if (delta <= 0) MaterialTheme.colorScheme.tertiary
                                 else MaterialTheme.colorScheme.error
@@ -151,7 +162,7 @@ fun DashboardScreen(
                     Text("Peso — últimos registros", style = MaterialTheme.typography.titleMedium)
                     SimpleLineChart(
                         points = state.weightPoints,
-                        valueFormatter = { "%.1f kg".format(it) }
+                        valueFormatter = { weightUnit.format(it) }
                     )
                     OutlinedButton(onClick = { showWeightDialog = true }) {
                         Text("+ Registrar peso")
@@ -171,12 +182,30 @@ fun DashboardScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
-                        state.recentSessions.forEach { session ->
-                            Text(
-                                "Volume %.0f kg".format(session.totalVolume),
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
+                        state.recentSessions.forEach { item ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text(
+                                        item.templateName ?: "Treino livre",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Text(
+                                        Instant.ofEpochMilli(item.session.startedAt)
+                                            .atZone(ZoneId.systemDefault())
+                                            .format(recentFormatter),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Text(
+                                    weightUnit.format(item.session.totalVolume, decimals = 0),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
@@ -186,9 +215,10 @@ fun DashboardScreen(
 
     if (showWeightDialog) {
         QuickWeightDialog(
+            unit = weightUnit,
             onDismiss = { showWeightDialog = false },
             onConfirm = { weight ->
-                viewModel.quickRegisterWeight(weight)
+                viewModel.quickRegisterWeight(weightUnit.toKg(weight))
                 showWeightDialog = false
             }
         )
@@ -196,7 +226,11 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun QuickWeightDialog(onDismiss: () -> Unit, onConfirm: (Float) -> Unit) {
+private fun QuickWeightDialog(
+    unit: WeightUnit,
+    onDismiss: () -> Unit,
+    onConfirm: (Float) -> Unit
+) {
     var weightText by rememberSaveable { mutableStateOf("") }
     val parsed = weightText.replace(',', '.').toFloatOrNull()
 
@@ -207,7 +241,7 @@ private fun QuickWeightDialog(onDismiss: () -> Unit, onConfirm: (Float) -> Unit)
             OutlinedTextField(
                 value = weightText,
                 onValueChange = { weightText = it },
-                label = { Text("Peso (kg)") },
+                label = { Text("Peso (${unit.suffix})") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true
             )

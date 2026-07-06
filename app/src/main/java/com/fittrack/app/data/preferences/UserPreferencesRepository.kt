@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -31,6 +32,8 @@ data class UserPreferences(
     val weightReminderEnabled: Boolean = false,
     val weightReminderHour: Int = 7,
     val weightReminderMinute: Int = 30,
+    /** Altura em cm (0 = não informada); usada para o IMC. */
+    val heightCm: Float = 0f,
     /** Backup automático diário no Google Drive. */
     val driveSyncEnabled: Boolean = false,
     /** Epoch millis do último backup enviado ao Drive (0 = nunca). */
@@ -53,6 +56,7 @@ class UserPreferencesRepository @Inject constructor(
         val WEIGHT_REMINDER_ENABLED = booleanPreferencesKey("weight_reminder_enabled")
         val WEIGHT_REMINDER_HOUR = intPreferencesKey("weight_reminder_hour")
         val WEIGHT_REMINDER_MINUTE = intPreferencesKey("weight_reminder_minute")
+        val HEIGHT_CM = floatPreferencesKey("height_cm")
         val DRIVE_SYNC_ENABLED = booleanPreferencesKey("drive_sync_enabled")
         val LAST_DRIVE_BACKUP_AT = longPreferencesKey("last_drive_backup_at")
     }
@@ -74,6 +78,7 @@ class UserPreferencesRepository @Inject constructor(
             weightReminderEnabled = prefs[Keys.WEIGHT_REMINDER_ENABLED] ?: false,
             weightReminderHour = prefs[Keys.WEIGHT_REMINDER_HOUR] ?: 7,
             weightReminderMinute = prefs[Keys.WEIGHT_REMINDER_MINUTE] ?: 30,
+            heightCm = prefs[Keys.HEIGHT_CM] ?: 0f,
             driveSyncEnabled = prefs[Keys.DRIVE_SYNC_ENABLED] ?: false,
             lastDriveBackupAt = prefs[Keys.LAST_DRIVE_BACKUP_AT] ?: 0L
         )
@@ -110,6 +115,10 @@ class UserPreferencesRepository @Inject constructor(
             it[Keys.WEIGHT_REMINDER_HOUR] = hour
             it[Keys.WEIGHT_REMINDER_MINUTE] = minute
         }
+    }
+
+    suspend fun setHeightCm(heightCm: Float) {
+        dataStore.edit { it[Keys.HEIGHT_CM] = heightCm }
     }
 
     suspend fun setDriveSyncEnabled(enabled: Boolean) {
