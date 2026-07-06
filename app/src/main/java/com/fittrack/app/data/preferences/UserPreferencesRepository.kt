@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import kotlinx.coroutines.flow.Flow
@@ -29,7 +30,11 @@ data class UserPreferences(
     /** Lembrete diário de registro de peso. */
     val weightReminderEnabled: Boolean = false,
     val weightReminderHour: Int = 7,
-    val weightReminderMinute: Int = 30
+    val weightReminderMinute: Int = 30,
+    /** Backup automático diário no Google Drive. */
+    val driveSyncEnabled: Boolean = false,
+    /** Epoch millis do último backup enviado ao Drive (0 = nunca). */
+    val lastDriveBackupAt: Long = 0L
 )
 
 @Singleton
@@ -48,6 +53,8 @@ class UserPreferencesRepository @Inject constructor(
         val WEIGHT_REMINDER_ENABLED = booleanPreferencesKey("weight_reminder_enabled")
         val WEIGHT_REMINDER_HOUR = intPreferencesKey("weight_reminder_hour")
         val WEIGHT_REMINDER_MINUTE = intPreferencesKey("weight_reminder_minute")
+        val DRIVE_SYNC_ENABLED = booleanPreferencesKey("drive_sync_enabled")
+        val LAST_DRIVE_BACKUP_AT = longPreferencesKey("last_drive_backup_at")
     }
 
     val preferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -66,7 +73,9 @@ class UserPreferencesRepository @Inject constructor(
             workoutReminderMinute = prefs[Keys.WORKOUT_REMINDER_MINUTE] ?: 0,
             weightReminderEnabled = prefs[Keys.WEIGHT_REMINDER_ENABLED] ?: false,
             weightReminderHour = prefs[Keys.WEIGHT_REMINDER_HOUR] ?: 7,
-            weightReminderMinute = prefs[Keys.WEIGHT_REMINDER_MINUTE] ?: 30
+            weightReminderMinute = prefs[Keys.WEIGHT_REMINDER_MINUTE] ?: 30,
+            driveSyncEnabled = prefs[Keys.DRIVE_SYNC_ENABLED] ?: false,
+            lastDriveBackupAt = prefs[Keys.LAST_DRIVE_BACKUP_AT] ?: 0L
         )
     }
 
@@ -101,5 +110,13 @@ class UserPreferencesRepository @Inject constructor(
             it[Keys.WEIGHT_REMINDER_HOUR] = hour
             it[Keys.WEIGHT_REMINDER_MINUTE] = minute
         }
+    }
+
+    suspend fun setDriveSyncEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.DRIVE_SYNC_ENABLED] = enabled }
+    }
+
+    suspend fun setLastDriveBackupAt(timestamp: Long) {
+        dataStore.edit { it[Keys.LAST_DRIVE_BACKUP_AT] = timestamp }
     }
 }

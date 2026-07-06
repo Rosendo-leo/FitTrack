@@ -3,6 +3,7 @@ package com.fittrack.app.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.fittrack.app.data.local.dao.BackupDao
 import com.fittrack.app.data.local.dao.CardioDao
 import com.fittrack.app.data.local.dao.MetricDao
 import com.fittrack.app.data.local.dao.SessionDao
@@ -32,6 +33,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun sessionDao(): SessionDao
     abstract fun metricDao(): MetricDao
     abstract fun cardioDao(): CardioDao
+    abstract fun backupDao(): BackupDao
 
     companion object {
         const val NAME = "fittrack.db"

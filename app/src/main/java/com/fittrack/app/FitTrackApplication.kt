@@ -3,8 +3,11 @@ package com.fittrack.app
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.fittrack.app.data.preferences.UserPreferencesRepository
 import com.fittrack.app.domain.presets.PresetSeeder
+import com.fittrack.app.worker.DriveSyncWorker
 import com.fittrack.app.worker.ReminderScheduler
+import kotlinx.coroutines.flow.first
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +27,9 @@ class FitTrackApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    @Inject
+    lateinit var preferencesRepository: UserPreferencesRepository
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
@@ -34,6 +40,9 @@ class FitTrackApplication : Application(), Configuration.Provider {
         applicationScope.launch {
             presetSeeder.seedIfNeeded()
             reminderScheduler.rescheduleAll()
+            if (preferencesRepository.preferences.first().driveSyncEnabled) {
+                DriveSyncWorker.schedule(this@FitTrackApplication)
+            }
         }
     }
 }

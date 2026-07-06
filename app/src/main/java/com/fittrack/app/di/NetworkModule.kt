@@ -1,5 +1,6 @@
 package com.fittrack.app.di
 
+import com.fittrack.app.data.remote.DriveApiService
 import com.fittrack.app.data.remote.GitHubApiService
 import dagger.Module
 import dagger.Provides
@@ -43,4 +44,14 @@ object NetworkModule {
     @Singleton
     fun provideGitHubApiService(retrofit: Retrofit): GitHubApiService =
         retrofit.create(GitHubApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideDriveApiService(client: OkHttpClient, json: Json): DriveApiService =
+        Retrofit.Builder()
+            .baseUrl("https://www.googleapis.com/")
+            .client(client)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+            .create(DriveApiService::class.java)
 }

@@ -57,11 +57,12 @@ Baseado na esquemática em `fittrack-schema.html`.
 - [x] Atualização dos widgets disparada pelos ViewModels após cada mutação relevante
 - Nota: ações abrem o app (deep link direto para iniciar treino/registrar peso fica no polimento)
 
-## Fase 8 — Backup & Sync
-- [ ] Export/import manual JSON + ZIP (com versão de schema)
-- [ ] Google Drive API (OAuth2, pasta oculta do app)
-- [ ] Sync automático via WorkManager
-- [ ] Restore com resolução de conflitos (substituir/mesclar/cancelar)
+## ✅ Fase 8 — Backup & Sync (concluída)
+- [x] Export/import manual JSON + ZIP (com versão de schema; aceita .zip ou .json puro)
+- [x] Google Drive API (Google Sign-In + Drive REST v3, `appDataFolder`; setup em `docs/DRIVE_SETUP.md`)
+- [x] Sync automático via WorkManager (diário, com rede; retenção dos 5 backups mais recentes)
+- [x] Restore com resolução de conflitos (substituir/mesclar/cancelar; merge idempotente com dedup)
+- Nota: requer OAuth client Android (pacote + SHA-1) no Google Cloud Console — ver docs/DRIVE_SETUP.md
 
 ## ✅ Fase 9 — Auto-update via GitHub Releases (concluída)
 - [x] `UpdateChecker` (Retrofit → GitHub API, comparação semver com BuildConfig.VERSION_NAME)

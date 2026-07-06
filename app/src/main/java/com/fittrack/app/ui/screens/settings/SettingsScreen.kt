@@ -1,5 +1,8 @@
 package com.fittrack.app.ui.screens.settings
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,9 +10,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -18,17 +24,22 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fittrack.app.BuildConfig
+import com.fittrack.app.data.backup.RestoreMode
 import com.fittrack.app.data.preferences.ThemeMode
+import java.text.DateFormat
+import java.util.Date
 
 private val dayLabels = listOf("S", "T", "Q", "Q", "S", "S", "D") // ISO 1=Seg … 7=Dom
 
@@ -36,8 +47,29 @@ private val dayLabels = listOf("S", "T", "Q", "Q", "S", "S", "D") // ISO 1=Seg �
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val prefs by viewModel.preferences.collectAsStateWithLifecycle()
+    val backupState by viewModel.backupState.collectAsStateWithLifecycle()
     var showWorkoutTimeDialog by rememberSaveable { mutableStateOf(false) }
     var showWeightTimeDialog by rememberSaveable { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    LaunchedEffect(backupState.message) {
+        backupState.message?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.consumeMessage()
+        }
+    }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri -> uri?.let(viewModel::exportToUri) }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let(viewModel::requestImport) }
+
+    val driveSignInLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { viewModel.onDriveSignInResult() }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -182,6 +214,105 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             }
         }
 
+        // ── Backup ──
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Backup 💾", style = MaterialTheme.typography.titleMedium)
+                        if (backupState.busy) {
+                            CircularProgressIndicator(modifier = Modifier.padding(4.dp))
+                        }
+                    }
+
+                    // Arquivo local (SAF)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TextButton(
+                            enabled = !backupState.busy,
+                            onClick = { exportLauncher.launch("fittrack-backup.zip") }
+                        ) { Text("Exportar arquivo") }
+                        TextButton(
+                            enabled = !backupState.busy,
+                            onClick = {
+                                importLauncher.launch(
+                                    arrayOf("application/zip", "application/json", "application/octet-stream")
+                                )
+                            }
+                        ) { Text("Importar arquivo") }
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    // Google Drive
+                    val email = backupState.driveAccountEmail
+                    if (email == null) {
+                        Text(
+                            "Conecte sua conta Google para guardar backups na pasta oculta do app no Drive.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        TextButton(
+                            enabled = !backupState.busy,
+                            onClick = { driveSignInLauncher.launch(viewModel.driveSignInIntent()) }
+                        ) { Text("Conectar Google Drive") }
+                    } else {
+                        Text(
+                            "Google Drive: $email",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (prefs.lastDriveBackupAt > 0L) {
+                            Text(
+                                "Último backup: " + DateFormat.getDateTimeInstance(
+                                    DateFormat.SHORT, DateFormat.SHORT
+                                ).format(Date(prefs.lastDriveBackupAt)),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            TextButton(
+                                enabled = !backupState.busy,
+                                onClick = viewModel::driveBackupNow
+                            ) { Text("Backup agora") }
+                            TextButton(
+                                enabled = !backupState.busy,
+                                onClick = viewModel::requestDriveRestore
+                            ) { Text("Restaurar") }
+                            TextButton(
+                                enabled = !backupState.busy,
+                                onClick = viewModel::driveSignOut
+                            ) { Text("Desconectar") }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Backup automático diário",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Switch(
+                                checked = prefs.driveSyncEnabled,
+                                onCheckedChange = viewModel::setDriveSyncEnabled
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         // ── Sobre ──
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -193,13 +324,42 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        "Backup no Drive e atualização automática chegam nas próximas versões.",
+                        "Backups locais e no Google Drive na seção acima; atualizações chegam via GitHub Releases.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         }
+    }
+
+    if (backupState.pendingRestore != null) {
+        AlertDialog(
+            onDismissRequest = viewModel::cancelRestore,
+            title = { Text("Restaurar backup") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Como aplicar os dados do backup?")
+                    Text(
+                        "Substituir: apaga tudo que está no app e restaura o backup.\n" +
+                            "Mesclar: mantém os dados atuais e adiciona só o que falta.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.confirmRestore(RestoreMode.REPLACE) }) {
+                    Text("Substituir")
+                }
+                TextButton(onClick = { viewModel.confirmRestore(RestoreMode.MERGE) }) {
+                    Text("Mesclar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::cancelRestore) { Text("Cancelar") }
+            }
+        )
     }
 
     if (showWorkoutTimeDialog) {

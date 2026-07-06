@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.fittrack.app.data.local.AppDatabase
+import com.fittrack.app.data.local.dao.BackupDao
 import com.fittrack.app.data.local.dao.CardioDao
 import com.fittrack.app.data.local.dao.MetricDao
 import com.fittrack.app.data.local.dao.SessionDao
@@ -40,6 +41,9 @@ object DatabaseModule {
 
     @Provides
     fun provideCardioDao(db: AppDatabase): CardioDao = db.cardioDao()
+
+    @Provides
+    fun provideBackupDao(db: AppDatabase): BackupDao = db.backupDao()
 
     @Provides
     @Singleton
