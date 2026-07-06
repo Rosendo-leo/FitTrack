@@ -20,6 +20,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.fittrack.app.MainActivity
+import com.fittrack.app.ui.common.format
 
 class ActiveSessionWidget : GlanceAppWidget() {
 
@@ -52,7 +53,8 @@ class ActiveSessionWidget : GlanceAppWidget() {
                             )
                         )
                         Text(
-                            "${data.totalSets} séries · %.0f kg".format(data.totalVolume),
+                            "${data.totalSets} séries · " +
+                                data.weightUnit.format(data.totalVolume, decimals = 0),
                             style = TextStyle(
                                 color = GlanceTheme.colors.primary,
                                 fontSize = 13.sp

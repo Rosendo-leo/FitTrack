@@ -5,11 +5,14 @@ import androidx.glance.appwidget.updateAll
 import com.fittrack.app.data.local.dao.MetricDao
 import com.fittrack.app.data.local.dao.SessionDao
 import com.fittrack.app.data.local.dao.WorkoutDao
+import com.fittrack.app.data.preferences.UserPreferencesRepository
+import com.fittrack.app.data.preferences.WeightUnit
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 import java.time.DayOfWeek
@@ -23,6 +26,7 @@ interface WidgetEntryPoint {
     fun workoutDao(): WorkoutDao
     fun sessionDao(): SessionDao
     fun metricDao(): MetricDao
+    fun userPreferencesRepository(): UserPreferencesRepository
 }
 
 internal fun widgetEntryPoint(context: Context): WidgetEntryPoint =
@@ -32,7 +36,11 @@ internal fun widgetEntryPoint(context: Context): WidgetEntryPoint =
 
 data class WorkoutDayData(val templateName: String?, val exerciseCount: Int)
 
-data class WeightData(val weightKg: Float?, val weekDeltaKg: Float?)
+data class WeightData(
+    val weightKg: Float?,
+    val weekDeltaKg: Float?,
+    val weightUnit: WeightUnit = WeightUnit.KG
+)
 
 data class WeeklyData(val weekDays: List<Boolean>, val streakDays: Int)
 
@@ -40,7 +48,8 @@ data class ActiveSessionData(
     val active: Boolean,
     val templateName: String = "",
     val totalSets: Int = 0,
-    val totalVolume: Float = 0f
+    val totalVolume: Float = 0f,
+    val weightUnit: WeightUnit = WeightUnit.KG
 )
 
 // ── Loaders (consultas one-shot no Room) ──
@@ -54,14 +63,16 @@ suspend fun loadWorkoutDayData(context: Context): WorkoutDayData {
 }
 
 suspend fun loadWeightData(context: Context): WeightData {
-    val metrics = widgetEntryPoint(context).metricDao().getAllOnce()
-    val latest = metrics.maxByOrNull { it.date } ?: return WeightData(null, null)
+    val entryPoint = widgetEntryPoint(context)
+    val unit = entryPoint.userPreferencesRepository().preferences.first().weightUnit
+    val metrics = entryPoint.metricDao().getAllOnce()
+    val latest = metrics.maxByOrNull { it.date } ?: return WeightData(null, null, unit)
     val target = latest.date - 7L * 24 * 60 * 60 * 1000
     val delta = metrics
         .filter { it.id != latest.id }
         .minByOrNull { kotlin.math.abs(it.date - target) }
         ?.let { latest.weightKg - it.weightKg }
-    return WeightData(latest.weightKg, delta)
+    return WeightData(latest.weightKg, delta, unit)
 }
 
 suspend fun loadWeeklyData(context: Context): WeeklyData {
@@ -84,8 +95,9 @@ suspend fun loadWeeklyData(context: Context): WeeklyData {
 
 suspend fun loadActiveSessionData(context: Context): ActiveSessionData {
     val entryPoint = widgetEntryPoint(context)
+    val unit = entryPoint.userPreferencesRepository().preferences.first().weightUnit
     val session = entryPoint.sessionDao().getActiveSessionOnce()
-        ?: return ActiveSessionData(active = false)
+        ?: return ActiveSessionData(active = false, weightUnit = unit)
     val sets = entryPoint.sessionDao().getSetsOnce(session.id)
     val templateName = session.templateId
         ?.let { entryPoint.workoutDao().getTemplate(it)?.name }
@@ -95,7 +107,8 @@ suspend fun loadActiveSessionData(context: Context): ActiveSessionData {
         templateName = templateName,
         totalSets = sets.size,
         totalVolume = sets.filterNot { it.isWarmup }
-            .fold(0f) { acc, set -> acc + set.weightKg * set.reps }
+            .fold(0f) { acc, set -> acc + set.weightKg * set.reps },
+        weightUnit = unit
     )
 }
 

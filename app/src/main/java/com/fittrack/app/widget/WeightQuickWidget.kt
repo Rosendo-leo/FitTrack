@@ -20,6 +20,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.fittrack.app.MainActivity
+import com.fittrack.app.ui.common.format
 
 class WeightQuickWidget : GlanceAppWidget() {
 
@@ -42,7 +43,7 @@ class WeightQuickWidget : GlanceAppWidget() {
                         )
                     )
                     Text(
-                        data.weightKg?.let { "%.1f kg".format(it) } ?: "Sem registro",
+                        data.weightKg?.let { data.weightUnit.format(it) } ?: "Sem registro",
                         style = TextStyle(
                             color = GlanceTheme.colors.onSurface,
                             fontSize = 20.sp,
@@ -52,7 +53,7 @@ class WeightQuickWidget : GlanceAppWidget() {
                     data.weekDeltaKg?.let { delta ->
                         val sign = if (delta > 0) "+" else ""
                         Text(
-                            "$sign%.1f kg na semana".format(delta),
+                            "$sign${data.weightUnit.format(delta)} na semana",
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurfaceVariant,
                                 fontSize = 12.sp

@@ -78,10 +78,11 @@ Baseado na esquemática em `fittrack-schema.html`.
 - [x] RPE por série na sessão ativa (campo opcional; exibido no histórico)
 - [x] Splash screen (core-splashscreen)
 - [x] Dashboard: treinos recentes com nome e data
-- [ ] Ícone final
-- [ ] Widgets respeitando a unidade de peso escolhida
-- [ ] Testes (DAOs, repositórios, detecção de PR)
-- [ ] Assinatura do APK + primeiro GitHub Release (v1.0)
+- [x] Ícone final (halter com traços arredondados, adaptive icon)
+- [x] Widgets respeitando a unidade de peso escolhida
+- [x] Testes unitários (conversão de unidades, semver do auto-update, serialização do backup) + CI roda `testDebugUnitTest`
+- [ ] Assinatura do APK + primeiro GitHub Release: versão já em 1.0.0 — basta `git push` e `git tag v1.0.0 && git push --tags` (workflow de release assina e publica)
+- Nota: testes de DAO/repositório exigem instrumentação (emulador) — fora do CI atual
 - Pendências de polimento anteriores: drag & drop de exercícios, timer de cardio,
   gráfico com Vico, timer de descanso como ForegroundService, deep links dos widgets,
   notificação de update em background + BOOT receiver
