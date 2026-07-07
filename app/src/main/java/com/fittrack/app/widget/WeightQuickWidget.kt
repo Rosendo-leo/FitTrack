@@ -1,13 +1,14 @@
 package com.fittrack.app.widget
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.Button
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
-import androidx.glance.action.actionStartActivity
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.appWidgetBackground
@@ -27,7 +28,7 @@ class WeightQuickWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val data = loadWeightData(context)
         provideContent {
-            GlanceTheme {
+            FitTrackGlanceTheme {
                 Column(
                     modifier = GlanceModifier
                         .fillMaxSize()
@@ -62,7 +63,10 @@ class WeightQuickWidget : GlanceAppWidget() {
                     }
                     Button(
                         text = "+ Registrar peso",
-                        onClick = actionStartActivity<MainActivity>(),
+                        onClick = actionStartActivity(
+                            Intent(context, MainActivity::class.java)
+                                .setAction(MainActivity.ACTION_REGISTER_WEIGHT)
+                        ),
                         modifier = GlanceModifier.padding(top = 8.dp)
                     )
                 }

@@ -43,6 +43,7 @@ import com.fittrack.app.data.backup.RestoreMode
 import com.fittrack.app.data.preferences.DistanceUnit
 import com.fittrack.app.data.preferences.ThemeMode
 import com.fittrack.app.data.preferences.WeightUnit
+import com.fittrack.app.ui.theme.supportsDynamicColor
 import java.text.DateFormat
 import java.util.Date
 
@@ -77,6 +78,14 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         ActivityResultContracts.StartActivityForResult()
     ) { viewModel.onDriveSignInResult() }
 
+    val exportWorkoutsCsvLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri -> uri?.let(viewModel::exportWorkoutsCsvToUri) }
+
+    val exportMetricsCsvLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri -> uri?.let(viewModel::exportMetricsCsvToUri) }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
@@ -108,6 +117,30 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                                     count = options.size
                                 )
                             ) { Text(label) }
+                        }
+                    }
+
+                    if (supportsDynamicColor) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    "Cores dinâmicas",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    "Usa as cores do papel de parede (Material You)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = prefs.dynamicColorEnabled,
+                                onCheckedChange = viewModel::setDynamicColorEnabled
+                            )
                         }
                     }
                 }
@@ -389,6 +422,33 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                                 onCheckedChange = viewModel::setDriveSyncEnabled
                             )
                         }
+                    }
+                }
+            }
+        }
+
+        // ── Exportar CSV ──
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Exportar CSV 📊", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Planilhas com seus treinos e medidas, para abrir no Excel/Sheets.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TextButton(
+                            enabled = !backupState.busy,
+                            onClick = { exportWorkoutsCsvLauncher.launch("fittrack-treinos.csv") }
+                        ) { Text("Treinos") }
+                        TextButton(
+                            enabled = !backupState.busy,
+                            onClick = { exportMetricsCsvLauncher.launch("fittrack-medidas.csv") }
+                        ) { Text("Medidas") }
                     }
                 }
             }

@@ -27,7 +27,7 @@ class ActiveSessionWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val data = loadActiveSessionData(context)
         provideContent {
-            GlanceTheme {
+            FitTrackGlanceTheme {
                 Column(
                     modifier = GlanceModifier
                         .fillMaxSize()

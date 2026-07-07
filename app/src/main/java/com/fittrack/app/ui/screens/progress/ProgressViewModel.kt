@@ -6,11 +6,19 @@ import com.fittrack.app.data.local.entities.BodyMetric
 import com.fittrack.app.data.local.entities.CardioSession
 import com.fittrack.app.data.local.entities.CardioType
 import com.fittrack.app.data.repository.MetricsRepository
+import com.fittrack.app.data.repository.WorkoutRepository
+import com.fittrack.app.domain.strengthProgression
+import com.fittrack.app.domain.weeklyVolume
 import com.fittrack.app.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -31,9 +39,19 @@ data class ProgressUiState(
             .sortedByDescending { it.second }
 }
 
+data class StrengthUiState(
+    val exerciseNames: List<String> = emptyList(),
+    val selectedExercise: String? = null,
+    /** Pontos (data, 1RM estimado em kg) por sessão. */
+    val strengthPoints: List<Pair<Long, Float>> = emptyList(),
+    /** Pontos (início da semana, volume em kg) por semana. */
+    val weeklyVolumePoints: List<Pair<Long, Float>> = emptyList()
+)
+
 @HiltViewModel
 class ProgressViewModel @Inject constructor(
     private val repository: MetricsRepository,
+    private val workoutRepository: WorkoutRepository,
     private val widgetUpdater: WidgetUpdater
 ) : ViewModel() {
 
@@ -47,6 +65,48 @@ class ProgressViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = ProgressUiState()
     )
+
+    // ── Progressão de força ──
+
+    private val selectedExercise = MutableStateFlow<String?>(null)
+
+    /** Exercício efetivo: o escolhido pelo usuário, ou o primeiro disponível. */
+    private val effectiveExercise = combine(
+        workoutRepository.observeTrainedExerciseNames(),
+        selectedExercise
+    ) { names, selected -> selected?.takeIf { it in names } ?: names.firstOrNull() }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val strengthPoints = effectiveExercise.flatMapLatest { name ->
+        if (name == null) flowOf(emptyList())
+        else workoutRepository.observeWorkingSetsFor(name).map { sets ->
+            strengthProgression(sets.map { Triple(it.date, it.weightKg, it.reps) })
+        }
+    }
+
+    val strengthState: StateFlow<StrengthUiState> = combine(
+        workoutRepository.observeTrainedExerciseNames(),
+        effectiveExercise,
+        strengthPoints,
+        workoutRepository.observeFinishedSessions()
+    ) { names, selected, points, sessions ->
+        StrengthUiState(
+            exerciseNames = names,
+            selectedExercise = selected,
+            strengthPoints = points,
+            weeklyVolumePoints = weeklyVolume(
+                sessions.map { it.session.startedAt to it.session.totalVolume }
+            )
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = StrengthUiState()
+    )
+
+    fun selectExercise(name: String) {
+        selectedExercise.value = name
+    }
 
     fun saveMetric(
         weightKg: Float,

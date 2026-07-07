@@ -23,7 +23,9 @@ data class EditorExercise(
     val id: Long? = null,
     val name: String,
     val muscleGroup: String,
-    val notes: String? = null
+    val notes: String? = null,
+    /** Descanso específico deste exercício, em segundos. Nulo usa o padrão da sessão. */
+    val restSeconds: Int? = null
 )
 
 data class EditorUiState(
@@ -73,7 +75,8 @@ class WorkoutEditorViewModel @Inject constructor(
                                     id = ex.id,
                                     name = ex.name,
                                     muscleGroup = ex.muscleGroup,
-                                    notes = ex.notes
+                                    notes = ex.notes,
+                                    restSeconds = ex.restSeconds
                                 )
                             },
                             loading = false
@@ -91,27 +94,35 @@ class WorkoutEditorViewModel @Inject constructor(
     fun setCategory(value: WorkoutCategory) = _uiState.update { it.copy(category = value) }
     fun setGoal(value: WorkoutGoal) = _uiState.update { it.copy(goal = value) }
 
-    fun addExercise(name: String, muscleGroup: String, notes: String?) {
+    fun addExercise(name: String, muscleGroup: String, notes: String?, restSeconds: Int? = null) {
         _uiState.update {
             it.copy(
                 exercises = it.exercises + EditorExercise(
                     localKey = nextLocalKey++,
                     name = name.trim(),
                     muscleGroup = muscleGroup.trim(),
-                    notes = notes?.trim()?.ifBlank { null }
+                    notes = notes?.trim()?.ifBlank { null },
+                    restSeconds = restSeconds
                 )
             )
         }
     }
 
-    fun updateExercise(localKey: Long, name: String, muscleGroup: String, notes: String?) {
+    fun updateExercise(
+        localKey: Long,
+        name: String,
+        muscleGroup: String,
+        notes: String?,
+        restSeconds: Int?
+    ) {
         _uiState.update { state ->
             state.copy(exercises = state.exercises.map { ex ->
                 if (ex.localKey == localKey) {
                     ex.copy(
                         name = name.trim(),
                         muscleGroup = muscleGroup.trim(),
-                        notes = notes?.trim()?.ifBlank { null }
+                        notes = notes?.trim()?.ifBlank { null },
+                        restSeconds = restSeconds
                     )
                 } else ex
             })
@@ -182,7 +193,8 @@ class WorkoutEditorViewModel @Inject constructor(
                         name = ex.name,
                         muscleGroup = ex.muscleGroup,
                         notes = ex.notes,
-                        orderIndex = index
+                        orderIndex = index,
+                        restSeconds = ex.restSeconds
                     )
                 }
             )

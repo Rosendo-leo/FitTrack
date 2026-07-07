@@ -3,6 +3,8 @@ package com.fittrack.app.data.repository
 import com.fittrack.app.data.local.dao.ExercisePr
 import com.fittrack.app.data.local.dao.SessionDao
 import com.fittrack.app.data.local.dao.SessionWithTemplateName
+import com.fittrack.app.data.local.dao.SetExportRow
+import com.fittrack.app.data.local.dao.SetSample
 import com.fittrack.app.data.local.dao.SetWithExercise
 import com.fittrack.app.data.local.dao.TemplateWithExercises
 import com.fittrack.app.data.local.dao.WorkoutDao
@@ -86,6 +88,20 @@ class WorkoutRepository @Inject constructor(
     }
 
     suspend fun recordSet(set: SetRecord): Long = sessionDao.insertSet(set)
+
+    /** Todas as séries de treinos finalizados, para exportação CSV. */
+    suspend fun getAllSetsForExport(): List<SetExportRow> = sessionDao.getAllSetsForExportOnce()
+
+    // ── Progressão de força ──
+    fun observeTrainedExerciseNames(): Flow<List<String>> =
+        sessionDao.observeTrainedExerciseNames()
+
+    fun observeWorkingSetsFor(exerciseName: String): Flow<List<SetSample>> =
+        sessionDao.observeWorkingSetsFor(exerciseName)
+
+    /** Séries do exercício na última sessão finalizada (para sugestão de carga). */
+    suspend fun lastPerformance(exerciseId: Long, excludeSessionId: Long): List<SetRecord> =
+        sessionDao.lastSetsForExercise(exerciseId, excludeSessionId)
 
     /** Retorna true se a carga informada é um novo recorde pessoal para o exercício. */
     suspend fun isPersonalRecord(exerciseId: Long, weightKg: Float): Boolean {

@@ -12,10 +12,11 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import com.fittrack.app.domain.currentStreak
+import com.fittrack.app.domain.weekTrainedFlags
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -34,7 +35,11 @@ internal fun widgetEntryPoint(context: Context): WidgetEntryPoint =
 
 // ── Modelos de dados por widget ──
 
-data class WorkoutDayData(val templateName: String?, val exerciseCount: Int)
+data class WorkoutDayData(
+    val templateId: Long?,
+    val templateName: String?,
+    val exerciseCount: Int
+)
 
 data class WeightData(
     val weightKg: Float?,
@@ -57,9 +62,9 @@ data class ActiveSessionData(
 suspend fun loadWorkoutDayData(context: Context): WorkoutDayData {
     val entryPoint = widgetEntryPoint(context)
     val template = entryPoint.workoutDao().getMyTemplatesOnce().firstOrNull()
-        ?: return WorkoutDayData(null, 0)
+        ?: return WorkoutDayData(null, null, 0)
     val count = entryPoint.workoutDao().getExercisesOnce(template.id).size
-    return WorkoutDayData(template.name, count)
+    return WorkoutDayData(template.id, template.name, count)
 }
 
 suspend fun loadWeightData(context: Context): WeightData {
@@ -82,15 +87,10 @@ suspend fun loadWeeklyData(context: Context): WeeklyData {
         .toSet()
 
     val today = LocalDate.now(zone)
-    var streak = 0
-    var cursor = if (today in trained) today else today.minusDays(1)
-    while (cursor in trained) {
-        streak++
-        cursor = cursor.minusDays(1)
-    }
-    val monday = today.with(DayOfWeek.MONDAY)
-    val weekDays = (0..6).map { monday.plusDays(it.toLong()) in trained }
-    return WeeklyData(weekDays, streak)
+    return WeeklyData(
+        weekDays = weekTrainedFlags(trained, today),
+        streakDays = currentStreak(trained, today)
+    )
 }
 
 suspend fun loadActiveSessionData(context: Context): ActiveSessionData {

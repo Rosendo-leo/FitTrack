@@ -54,6 +54,7 @@ import com.fittrack.app.ui.common.suffix
 import com.fittrack.app.ui.common.toKg
 import com.fittrack.app.ui.common.toKm
 import com.fittrack.app.ui.components.SimpleLineChart
+import com.fittrack.app.ui.theme.warning
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -76,10 +77,12 @@ fun ProgressScreen(viewModel: ProgressViewModel = hiltViewModel()) {
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                if (selectedTab == 0) showMetricDialog = true else showCardioDialog = true
-            }) {
-                Icon(Icons.Default.Add, contentDescription = "Registrar")
+            if (selectedTab != 1) {
+                FloatingActionButton(onClick = {
+                    if (selectedTab == 0) showMetricDialog = true else showCardioDialog = true
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Registrar")
+                }
             }
         }
     ) { padding ->
@@ -98,12 +101,18 @@ fun ProgressScreen(viewModel: ProgressViewModel = hiltViewModel()) {
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
+                    text = { Text("Força") }
+                )
+                Tab(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
                     text = { Text("Cardio") }
                 )
             }
             when (selectedTab) {
                 0 -> BodyTab(state, viewModel)
-                1 -> CardioTab(state, viewModel)
+                1 -> StrengthTab(viewModel)
+                2 -> CardioTab(state, viewModel)
             }
         }
     }
@@ -142,6 +151,14 @@ private fun bmiLabel(bmi: Float): String = when {
 }
 
 @Composable
+private fun bmiColor(bmi: Float): androidx.compose.ui.graphics.Color = when {
+    bmi < 18.5f -> MaterialTheme.colorScheme.primary
+    bmi < 25f -> MaterialTheme.colorScheme.tertiary
+    bmi < 30f -> MaterialTheme.colorScheme.warning
+    else -> MaterialTheme.colorScheme.error
+}
+
+@Composable
 private fun BodyTab(state: ProgressUiState, viewModel: ProgressViewModel) {
     val prefs = LocalUserPreferences.current
     val weightUnit = prefs.weightUnit
@@ -170,8 +187,8 @@ private fun BodyTab(state: ProgressUiState, viewModel: ProgressViewModel) {
                         }
                         Text(
                             bmiLabel(bmi),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = MaterialTheme.typography.titleMedium,
+                            color = bmiColor(bmi)
                         )
                     }
                 }
@@ -231,6 +248,97 @@ private fun BodyTab(state: ProgressUiState, viewModel: ProgressViewModel) {
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StrengthTab(viewModel: ProgressViewModel) {
+    val state by viewModel.strengthState.collectAsStateWithLifecycle()
+    val weightUnit = LocalUserPreferences.current.weightUnit
+    var exerciseExpanded by remember { mutableStateOf(false) }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (state.exerciseNames.isEmpty()) {
+            item {
+                Text(
+                    "Finalize treinos com séries registradas para acompanhar sua força.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            return@LazyColumn
+        }
+
+        item {
+            ExposedDropdownMenuBox(
+                expanded = exerciseExpanded,
+                onExpandedChange = { exerciseExpanded = it }
+            ) {
+                OutlinedTextField(
+                    value = state.selectedExercise.orEmpty(),
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Exercício") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = exerciseExpanded)
+                    },
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = exerciseExpanded,
+                    onDismissRequest = { exerciseExpanded = false }
+                ) {
+                    state.exerciseNames.forEach { name ->
+                        DropdownMenuItem(
+                            text = { Text(name) },
+                            onClick = {
+                                viewModel.selectExercise(name)
+                                exerciseExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("1RM estimado (Epley)", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Melhor série de cada sessão",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    SimpleLineChart(
+                        points = state.strengthPoints,
+                        valueFormatter = { weightUnit.format(it) }
+                    )
+                }
+            }
+        }
+
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Volume semanal", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Todos os treinos finalizados",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    SimpleLineChart(
+                        points = state.weeklyVolumePoints,
+                        valueFormatter = { weightUnit.format(it, decimals = 0) }
+                    )
+                }
             }
         }
     }

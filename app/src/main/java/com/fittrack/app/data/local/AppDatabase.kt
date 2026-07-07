@@ -24,7 +24,7 @@ import com.fittrack.app.data.local.entities.WorkoutTemplate
         BodyMetric::class,
         CardioSession::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -37,5 +37,11 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val NAME = "fittrack.db"
+
+        val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE exercises ADD COLUMN restSeconds INTEGER DEFAULT NULL")
+            }
+        }
     }
 }

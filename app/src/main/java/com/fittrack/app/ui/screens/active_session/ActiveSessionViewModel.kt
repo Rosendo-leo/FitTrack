@@ -24,7 +24,9 @@ import javax.inject.Inject
 
 data class ExerciseWithSets(
     val exercise: Exercise,
-    val sets: List<SetRecord> = emptyList()
+    val sets: List<SetRecord> = emptyList(),
+    /** Séries da última sessão finalizada, para sugestão de carga. */
+    val lastSets: List<SetRecord> = emptyList()
 )
 
 data class ActiveSessionUiState(
@@ -34,6 +36,8 @@ data class ActiveSessionUiState(
     val exercises: List<ExerciseWithSets> = emptyList(),
     val restSecondsLeft: Int? = null,
     val restTotalSeconds: Int = 90,
+    /** Duração total do descanso em curso (pode vir do exercício, não do padrão). */
+    val restCurrentTotalSeconds: Int = 90,
     val finished: Boolean = false
 ) {
     /** Volume total (kg) das séries válidas, excluindo aquecimento. */
@@ -76,12 +80,15 @@ class ActiveSessionViewModel @Inject constructor(
             val template = templateId?.let { repository.getTemplate(it) }
             val exercises = templateId?.let { repository.getExercises(it) }.orEmpty()
 
+            val withLastSets = exercises.map { ex ->
+                ExerciseWithSets(ex, lastSets = repository.lastPerformance(ex.id, sessionId))
+            }
             _uiState.update {
                 it.copy(
                     loading = false,
                     session = session,
                     templateName = template?.name ?: "Treino livre",
-                    exercises = exercises.map { ex -> ExerciseWithSets(ex) }
+                    exercises = withLastSets
                 )
             }
 
@@ -124,7 +131,10 @@ class ActiveSessionViewModel @Inject constructor(
                     }
             }
             widgetUpdater.refreshAll()
-            startRest()
+            val exerciseRest = _uiState.value.exercises
+                .firstOrNull { it.exercise.id == exerciseId }
+                ?.exercise?.restSeconds
+            startRest(exerciseRest)
         }
     }
 
@@ -140,10 +150,13 @@ class ActiveSessionViewModel @Inject constructor(
         }
     }
 
-    fun startRest() {
+    /** [overrideSeconds] usa o descanso próprio do exercício, quando definido. */
+    fun startRest(overrideSeconds: Int? = null) {
         restJob?.cancel()
+        notificationHelper.cancelRestFinished()
         restJob = viewModelScope.launch {
-            val total = _uiState.value.restTotalSeconds
+            val total = overrideSeconds ?: _uiState.value.restTotalSeconds
+            _uiState.update { it.copy(restCurrentTotalSeconds = total) }
             for (remaining in total downTo 1) {
                 _uiState.update { it.copy(restSecondsLeft = remaining) }
                 notificationHelper.showRestTimer(remaining, total)
@@ -151,6 +164,7 @@ class ActiveSessionViewModel @Inject constructor(
             }
             _uiState.update { it.copy(restSecondsLeft = null) }
             notificationHelper.cancelRestTimer()
+            notificationHelper.showRestFinished()
             notificationHelper.vibrate()
         }
     }

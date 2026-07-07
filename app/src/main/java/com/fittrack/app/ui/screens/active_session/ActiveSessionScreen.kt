@@ -1,5 +1,9 @@
 package com.fittrack.app.ui.screens.active_session
 
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +28,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -43,8 +48,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -53,6 +65,7 @@ import com.fittrack.app.data.local.entities.SetRecord
 import com.fittrack.app.data.preferences.WeightUnit
 import com.fittrack.app.ui.common.LocalUserPreferences
 import com.fittrack.app.ui.common.format
+import com.fittrack.app.ui.common.fromKg
 import com.fittrack.app.ui.common.suffix
 import com.fittrack.app.ui.common.toKg
 import kotlinx.coroutines.delay
@@ -70,6 +83,11 @@ private fun formatDuration(millis: Long): String {
     }
 }
 
+/** Valor para campo de entrada: sem sufixo e sem zeros à direita. */
+private fun Float.toInputString(): String =
+    if (this == toInt().toFloat()) toInt().toString()
+    else String.format(Locale.US, "%.1f", this)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActiveSessionScreen(
@@ -82,6 +100,18 @@ fun ActiveSessionScreen(
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
     var elapsedMillis by remember { mutableLongStateOf(0L) }
+    val context = LocalContext.current
+
+    // Ao sair com séries registradas, deixa claro que a sessão continua aberta
+    val exitKeepingSession: () -> Unit = {
+        if (state.totalSets > 0 && !state.finished) {
+            Toast.makeText(
+                context, "Treino continua em segundo plano", Toast.LENGTH_SHORT
+            ).show()
+        }
+        onExit()
+    }
+    BackHandler(enabled = state.totalSets > 0 && !state.finished) { exitKeepingSession() }
 
     LaunchedEffect(state.finished) {
         if (state.finished) onExit()
@@ -116,7 +146,7 @@ fun ActiveSessionScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onExit) {
+                    IconButton(onClick = exitKeepingSession) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                     }
                 },
@@ -146,7 +176,7 @@ fun ActiveSessionScreen(
             state.restSecondsLeft?.let { remaining ->
                 RestTimerBar(
                     remaining = remaining,
-                    total = state.restTotalSeconds,
+                    total = state.restCurrentTotalSeconds,
                     onSkip = viewModel::skipRest
                 )
             }
@@ -244,31 +274,40 @@ fun ActiveSessionScreen(
 
 @Composable
 private fun RestTimerBar(remaining: Int, total: Int, onSkip: () -> Unit) {
+    val progress by animateFloatAsState(
+        targetValue = if (total > 0) remaining / total.toFloat() else 0f,
+        animationSpec = tween(durationMillis = 900),
+        label = "restProgress"
+    )
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+            containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.LocalFireDepartment,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                "Descanso  ${formatDuration(remaining * 1000L)} / ${formatDuration(total * 1000L)}",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f).padding(start = 10.dp)
-            )
-            IconButton(onClick = onSkip) {
-                Icon(Icons.Default.Close, contentDescription = "Pular descanso")
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.LocalFireDepartment,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    "Descanso  ${formatDuration(remaining * 1000L)} / ${formatDuration(total * 1000L)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.weight(1f).padding(start = 10.dp)
+                )
+                IconButton(onClick = onSkip) {
+                    Icon(Icons.Default.Close, contentDescription = "Pular descanso")
+                }
             }
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 6.dp)
+            )
         }
     }
 }
@@ -284,6 +323,17 @@ private fun ExerciseCard(
     var repsText by rememberSaveable(item.exercise.id) { mutableStateOf("") }
     var rpeText by rememberSaveable(item.exercise.id) { mutableStateOf("") }
     var isWarmup by rememberSaveable(item.exercise.id) { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+
+    // Sugere a carga da última sessão enquanto o usuário ainda não digitou nada
+    LaunchedEffect(item.lastSets) {
+        if (weightText.isBlank() && item.sets.isEmpty()) {
+            item.lastSets.lastOrNull { !it.isWarmup }?.let { last ->
+                weightText = weightUnit.fromKg(last.weightKg).toInputString()
+                repsText = last.reps.toString()
+            }
+        }
+    }
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -300,6 +350,17 @@ private fun ExerciseCard(
                     subtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            val lastWorking = item.lastSets.filterNot { it.isWarmup }
+            lastWorking.maxByOrNull { it.weightKg }?.let { best ->
+                Text(
+                    "Última vez: ${weightUnit.format(best.weightKg)} × ${best.reps}" +
+                        " · ${lastWorking.size} " +
+                        if (lastWorking.size == 1) "série" else "séries",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.tertiary
                 )
             }
 
@@ -328,6 +389,21 @@ private fun ExerciseCard(
                 }
             }
 
+            val focusManager = LocalFocusManager.current
+            val registerCurrentSet: () -> Unit = {
+                val weight = weightText.replace(',', '.').toFloatOrNull()
+                val reps = repsText.toIntOrNull()
+                val rpe = rpeText.replace(',', '.').toFloatOrNull()
+                    ?.coerceIn(1f, 10f)
+                if (weight != null && reps != null && reps > 0) {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    focusManager.clearFocus()
+                    onRegisterSet(weight, reps, isWarmup, rpe)
+                    repsText = ""
+                    rpeText = ""
+                }
+            }
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -336,7 +412,13 @@ private fun ExerciseCard(
                     value = weightText,
                     onValueChange = { weightText = it },
                     label = { Text(weightUnit.suffix) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -344,7 +426,13 @@ private fun ExerciseCard(
                     value = repsText,
                     onValueChange = { repsText = it },
                     label = { Text("reps") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
@@ -352,7 +440,11 @@ private fun ExerciseCard(
                     value = rpeText,
                     onValueChange = { rpeText = it },
                     label = { Text("RPE") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { registerCurrentSet() }),
                     singleLine = true,
                     modifier = Modifier.weight(0.8f)
                 )
@@ -362,17 +454,7 @@ private fun ExerciseCard(
                     label = { Text("Aq.") }
                 )
                 IconButton(
-                    onClick = {
-                        val weight = weightText.replace(',', '.').toFloatOrNull()
-                        val reps = repsText.toIntOrNull()
-                        val rpe = rpeText.replace(',', '.').toFloatOrNull()
-                            ?.coerceIn(1f, 10f)
-                        if (weight != null && reps != null && reps > 0) {
-                            onRegisterSet(weight, reps, isWarmup, rpe)
-                            repsText = ""
-                            rpeText = ""
-                        }
-                    },
+                    onClick = registerCurrentSet,
                     enabled = weightText.isNotBlank() && repsText.isNotBlank()
                 ) {
                     Icon(

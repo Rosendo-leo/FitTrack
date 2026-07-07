@@ -20,6 +20,8 @@ enum class DistanceUnit { KM, MI }
 
 data class UserPreferences(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    /** Usa as cores do papel de parede (Material You) em vez da paleta do app. Android 12+. */
+    val dynamicColorEnabled: Boolean = false,
     val weightUnit: WeightUnit = WeightUnit.KG,
     val distanceUnit: DistanceUnit = DistanceUnit.KM,
     val notificationsEnabled: Boolean = true,
@@ -46,6 +48,7 @@ class UserPreferencesRepository @Inject constructor(
 ) {
     private object Keys {
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val DYNAMIC_COLOR_ENABLED = booleanPreferencesKey("dynamic_color_enabled")
         val WEIGHT_UNIT = stringPreferencesKey("weight_unit")
         val DISTANCE_UNIT = stringPreferencesKey("distance_unit")
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
@@ -65,6 +68,7 @@ class UserPreferencesRepository @Inject constructor(
         UserPreferences(
             themeMode = prefs[Keys.THEME_MODE]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() }
                 ?: ThemeMode.SYSTEM,
+            dynamicColorEnabled = prefs[Keys.DYNAMIC_COLOR_ENABLED] ?: false,
             weightUnit = prefs[Keys.WEIGHT_UNIT]?.let { runCatching { WeightUnit.valueOf(it) }.getOrNull() }
                 ?: WeightUnit.KG,
             distanceUnit = prefs[Keys.DISTANCE_UNIT]?.let { runCatching { DistanceUnit.valueOf(it) }.getOrNull() }
@@ -86,6 +90,10 @@ class UserPreferencesRepository @Inject constructor(
 
     suspend fun setThemeMode(mode: ThemeMode) {
         dataStore.edit { it[Keys.THEME_MODE] = mode.name }
+    }
+
+    suspend fun setDynamicColorEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.DYNAMIC_COLOR_ENABLED] = enabled }
     }
 
     suspend fun setWeightUnit(unit: WeightUnit) {

@@ -1,5 +1,6 @@
 package com.fittrack.app.ui.screens.workout.editor
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -54,6 +55,7 @@ fun WorkoutEditorScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var exerciseDialogTarget by remember { mutableStateOf<EditorExercise?>(null) }
+    var editDialogTarget by remember { mutableStateOf<EditorExercise?>(null) }
     var showNewExerciseDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(state.saved) {
@@ -162,14 +164,21 @@ fun WorkoutEditorScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(end = 4.dp)
+                                .clickable { editDialogTarget = exercise }
                         ) {
                             Text(exercise.name, style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                listOfNotNull(exercise.muscleGroup.ifBlank { null }, exercise.notes)
-                                    .joinToString(" · "),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            val subtitle = listOfNotNull(
+                                exercise.muscleGroup.ifBlank { null },
+                                exercise.notes,
+                                exercise.restSeconds?.let { "descanso ${it}s" }
+                            ).joinToString(" · ")
+                            if (subtitle.isNotBlank()) {
+                                Text(
+                                    subtitle,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                         IconButton(
                             onClick = { viewModel.moveExercise(exercise.localKey, -1) },
@@ -200,9 +209,24 @@ fun WorkoutEditorScreen(
         ExerciseDialog(
             title = "Novo exercício",
             onDismiss = { showNewExerciseDialog = false },
-            onConfirm = { name, group, notes ->
-                viewModel.addExercise(name, group, notes)
+            onConfirm = { name, group, notes, restSeconds ->
+                viewModel.addExercise(name, group, notes, restSeconds)
                 showNewExerciseDialog = false
+            }
+        )
+    }
+
+    editDialogTarget?.let { target ->
+        ExerciseDialog(
+            title = "Editar exercício",
+            initialName = target.name,
+            initialGroup = target.muscleGroup,
+            initialNotes = target.notes.orEmpty(),
+            initialRestSeconds = target.restSeconds,
+            onDismiss = { editDialogTarget = null },
+            onConfirm = { name, group, notes, restSeconds ->
+                viewModel.updateExercise(target.localKey, name, group, notes, restSeconds)
+                editDialogTarget = null
             }
         )
     }
@@ -267,14 +291,18 @@ private fun <T> EnumDropdown(
 private fun ExerciseDialog(
     title: String,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, muscleGroup: String, notes: String?) -> Unit,
+    onConfirm: (name: String, muscleGroup: String, notes: String?, restSeconds: Int?) -> Unit,
     initialName: String = "",
     initialGroup: String = "",
-    initialNotes: String = ""
+    initialNotes: String = "",
+    initialRestSeconds: Int? = null
 ) {
     var name by rememberSaveable { mutableStateOf(initialName) }
     var group by rememberSaveable { mutableStateOf(initialGroup) }
     var notes by rememberSaveable { mutableStateOf(initialNotes) }
+    var restText by rememberSaveable {
+        mutableStateOf(initialRestSeconds?.toString().orEmpty())
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -299,11 +327,25 @@ private fun ExerciseDialog(
                     label = { Text("Notas (ex: 4x10)") },
                     singleLine = true
                 )
+                OutlinedTextField(
+                    value = restText,
+                    onValueChange = { restText = it },
+                    label = { Text("Descanso (segundos, opcional)") },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                    ),
+                    singleLine = true
+                )
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(name, group, notes.ifBlank { null }) },
+                onClick = {
+                    onConfirm(
+                        name, group, notes.ifBlank { null },
+                        restText.toIntOrNull()?.coerceIn(15, 600)
+                    )
+                },
                 enabled = name.isNotBlank()
             ) { Text("Confirmar") }
         },

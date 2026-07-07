@@ -26,12 +26,14 @@ class NotificationHelper @Inject constructor(
     companion object {
         const val CHANNEL_REMINDERS = "reminders"
         const val CHANNEL_REST_TIMER = "rest_timer"
+        const val CHANNEL_REST_DONE = "rest_done"
         const val CHANNEL_ACHIEVEMENTS = "achievements"
 
         const val ID_WORKOUT_REMINDER = 1001
         const val ID_WEIGHT_REMINDER = 1002
         const val ID_REST_TIMER = 1003
         const val ID_PR = 1004
+        const val ID_REST_DONE = 1005
     }
 
     init {
@@ -53,6 +55,16 @@ class NotificationHelper @Inject constructor(
                 "Timer de descanso",
                 NotificationManager.IMPORTANCE_LOW
             ).apply { description = "Contagem do descanso durante a sessão"; setSound(null, null) }
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_REST_DONE,
+                "Fim do descanso",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Alerta quando o tempo de descanso termina"
+                enableVibration(true)
+            }
         )
         manager.createNotificationChannel(
             NotificationChannel(
@@ -138,6 +150,23 @@ class NotificationHelper @Inject constructor(
 
     fun cancelRestTimer() {
         NotificationManagerCompat.from(context).cancel(ID_REST_TIMER)
+    }
+
+    /** Heads-up com som/vibração quando o descanso termina (tela apagada inclusive). */
+    fun showRestFinished() {
+        if (!canNotify()) return
+        NotificationManagerCompat.from(context).notify(
+            ID_REST_DONE,
+            builder(CHANNEL_REST_DONE)
+                .setContentTitle("Descanso concluído! 💪")
+                .setContentText("Hora da próxima série.")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .build()
+        )
+    }
+
+    fun cancelRestFinished() {
+        NotificationManagerCompat.from(context).cancel(ID_REST_DONE)
     }
 
     fun vibrate(durationMs: Long = 500) {

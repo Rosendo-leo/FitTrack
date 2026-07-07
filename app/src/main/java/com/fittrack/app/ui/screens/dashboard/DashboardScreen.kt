@@ -15,20 +15,23 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -50,11 +53,20 @@ private val recentFormatter = DateTimeFormatter.ofPattern("dd/MM · HH:mm", Loca
 @Composable
 fun DashboardScreen(
     onOpenSession: (sessionId: Long) -> Unit,
+    autoOpenWeightDialog: Boolean = false,
+    onAutoOpenHandled: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val weightUnit = LocalUserPreferences.current.weightUnit
     var showWeightDialog by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(autoOpenWeightDialog) {
+        if (autoOpenWeightDialog) {
+            showWeightDialog = true
+            onAutoOpenHandled()
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -67,18 +79,38 @@ fun DashboardScreen(
 
         state.activeSession?.let { session ->
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                    )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.large)
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.secondary
+                                )
+                            )
+                        )
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Sessão em andamento", style = MaterialTheme.typography.labelSmall)
-                        Text("Você tem um treino aberto.", style = MaterialTheme.typography.bodyLarge)
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            "Sessão em andamento",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                        )
+                        Text(
+                            "Você tem um treino aberto.",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                         Button(
                             onClick = { onOpenSession(session.id) },
-                            modifier = Modifier.padding(top = 8.dp)
+                            modifier = Modifier.padding(top = 12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.onPrimary,
+                                contentColor = MaterialTheme.colorScheme.primary
+                            )
                         ) { Text("Continuar treino") }
                     }
                 }
@@ -133,21 +165,21 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         state.weekDays.forEachIndexed { index, trained ->
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(
+                                        color = if (trained) MaterialTheme.colorScheme.tertiary
+                                        else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
                                     weekLetters[index],
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .padding(top = 6.dp)
-                                        .size(14.dp)
-                                        .background(
-                                            color = if (trained) MaterialTheme.colorScheme.tertiary
-                                            else MaterialTheme.colorScheme.surfaceVariant,
-                                            shape = CircleShape
-                                        )
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = if (trained) MaterialTheme.colorScheme.onTertiary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -164,7 +196,10 @@ fun DashboardScreen(
                         points = state.weightPoints,
                         valueFormatter = { weightUnit.format(it) }
                     )
-                    OutlinedButton(onClick = { showWeightDialog = true }) {
+                    FilledTonalButton(
+                        onClick = { showWeightDialog = true },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    ) {
                         Text("+ Registrar peso")
                     }
                 }

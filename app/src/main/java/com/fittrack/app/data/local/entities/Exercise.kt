@@ -23,5 +23,7 @@ data class Exercise(
     val name: String,
     val muscleGroup: String,
     val notes: String? = null,
-    val orderIndex: Int = 0
+    val orderIndex: Int = 0,
+    /** Descanso específico deste exercício, em segundos. Nulo usa o padrão da sessão. */
+    val restSeconds: Int? = null
 )

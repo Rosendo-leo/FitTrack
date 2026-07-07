@@ -7,6 +7,8 @@ import com.fittrack.app.data.local.entities.BodyMetric
 import com.fittrack.app.data.local.entities.WorkoutSession
 import com.fittrack.app.data.repository.MetricsRepository
 import com.fittrack.app.data.repository.WorkoutRepository
+import com.fittrack.app.domain.currentStreak
+import com.fittrack.app.domain.weekTrainedFlags
 import com.fittrack.app.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,7 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -63,21 +64,12 @@ class DashboardViewModel @Inject constructor(
             .toSet()
 
         val today = LocalDate.now(zone)
-        var streak = 0
-        var cursor = if (today in trainedDays) today else today.minusDays(1)
-        while (cursor in trainedDays) {
-            streak++
-            cursor = cursor.minusDays(1)
-        }
-
-        val monday = today.with(DayOfWeek.MONDAY)
-        val weekDays = (0..6).map { offset -> monday.plusDays(offset.toLong()) in trainedDays }
 
         DashboardUiState(
             latestWeight = latest,
             weekDeltaKg = weekDelta,
-            streakDays = streak,
-            weekDays = weekDays,
+            streakDays = currentStreak(trainedDays, today),
+            weekDays = weekTrainedFlags(trainedDays, today),
             weightPoints = metrics.sortedBy { it.date }
                 .takeLast(30)
                 .map { it.date to it.weightKg },

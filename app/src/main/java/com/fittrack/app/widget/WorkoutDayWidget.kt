@@ -1,6 +1,7 @@
 package com.fittrack.app.widget
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -10,7 +11,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.provideContent
-import androidx.glance.action.actionStartActivity
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.background
 import androidx.glance.layout.Column
 import androidx.glance.layout.fillMaxSize
@@ -26,7 +27,7 @@ class WorkoutDayWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val data = loadWorkoutDayData(context)
         provideContent {
-            GlanceTheme {
+            FitTrackGlanceTheme {
                 Column(
                     modifier = GlanceModifier
                         .fillMaxSize()
@@ -60,7 +61,14 @@ class WorkoutDayWidget : GlanceAppWidget() {
                     }
                     Button(
                         text = if (data.templateName != null) "▶ Iniciar treino" else "Abrir app",
-                        onClick = actionStartActivity<MainActivity>(),
+                        onClick = actionStartActivity(
+                            Intent(context, MainActivity::class.java).apply {
+                                if (data.templateId != null) {
+                                    action = MainActivity.ACTION_START_WORKOUT
+                                    putExtra(MainActivity.EXTRA_TEMPLATE_ID, data.templateId)
+                                }
+                            }
+                        ),
                         modifier = GlanceModifier.padding(top = 8.dp)
                     )
                 }

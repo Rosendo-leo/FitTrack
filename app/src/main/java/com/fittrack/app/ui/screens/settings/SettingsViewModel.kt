@@ -11,6 +11,7 @@ import com.fittrack.app.data.backup.DriveAuthManager
 import com.fittrack.app.data.backup.DriveBackupRepository
 import com.fittrack.app.data.backup.RestoreMode
 import com.fittrack.app.data.backup.RestoreSummary
+import com.fittrack.app.data.export.CsvExporter
 import com.fittrack.app.data.preferences.DistanceUnit
 import com.fittrack.app.data.preferences.ThemeMode
 import com.fittrack.app.data.preferences.UserPreferences
@@ -51,6 +52,7 @@ class SettingsViewModel @Inject constructor(
     private val backupManager: BackupManager,
     private val driveAuthManager: DriveAuthManager,
     private val driveBackupRepository: DriveBackupRepository,
+    private val csvExporter: CsvExporter,
     private val widgetUpdater: WidgetUpdater
 ) : ViewModel() {
 
@@ -68,6 +70,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { preferencesRepository.setThemeMode(mode) }
+    }
+
+    fun setDynamicColorEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.setDynamicColorEnabled(enabled) }
     }
 
     fun setWeightUnit(unit: WeightUnit) {
@@ -141,6 +147,26 @@ class SettingsViewModel @Inject constructor(
                 "Mesclado: +${summary.templates} treinos, +${summary.sessions} sessões, " +
                     "+${summary.bodyMetrics} pesos, +${summary.cardioSessions} cardios ✅"
             }
+        }
+    }
+
+    // ── Exportação CSV ──
+
+    fun exportWorkoutsCsvToUri(uri: Uri) {
+        runBackupOp("Treinos exportados ✅") {
+            val csv = csvExporter.exportWorkoutSets()
+            context.contentResolver.openOutputStream(uri)?.use { it.write(csv.toByteArray()) }
+                ?: error("Não foi possível abrir o arquivo de destino.")
+            null
+        }
+    }
+
+    fun exportMetricsCsvToUri(uri: Uri) {
+        runBackupOp("Medidas exportadas ✅") {
+            val csv = csvExporter.exportBodyMetrics()
+            context.contentResolver.openOutputStream(uri)?.use { it.write(csv.toByteArray()) }
+                ?: error("Não foi possível abrir o arquivo de destino.")
+            null
         }
     }
 

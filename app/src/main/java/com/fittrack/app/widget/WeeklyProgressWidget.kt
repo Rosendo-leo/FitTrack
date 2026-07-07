@@ -31,7 +31,7 @@ class WeeklyProgressWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val data = loadWeeklyData(context)
         provideContent {
-            GlanceTheme {
+            FitTrackGlanceTheme {
                 Column(
                     modifier = GlanceModifier
                         .fillMaxSize()
@@ -63,7 +63,7 @@ class WeeklyProgressWidget : GlanceAppWidget() {
                                 Text(
                                     if (trained) "✓" else "·",
                                     style = TextStyle(
-                                        color = if (trained) GlanceTheme.colors.primary
+                                        color = if (trained) GlanceTheme.colors.tertiary
                                         else GlanceTheme.colors.onSurfaceVariant,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold
