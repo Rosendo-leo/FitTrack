@@ -1,6 +1,7 @@
 package com.fittrack.app.ui.screens.workout.editor
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,11 +14,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,13 +36,18 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fittrack.app.data.local.entities.WorkoutCategory
@@ -57,6 +64,9 @@ fun WorkoutEditorScreen(
     var exerciseDialogTarget by remember { mutableStateOf<EditorExercise?>(null) }
     var editDialogTarget by remember { mutableStateOf<EditorExercise?>(null) }
     var showNewExerciseDialog by rememberSaveable { mutableStateOf(false) }
+    var draggingKey by remember { mutableStateOf<Long?>(null) }
+    var dragOffsetY by remember { mutableFloatStateOf(0f) }
+    val dragThresholdPx = with(LocalDensity.current) { 72.dp.toPx() }
 
     LaunchedEffect(state.saved) {
         if (state.saved) onBack()
@@ -154,12 +164,58 @@ fun WorkoutEditorScreen(
                 }
             }
             items(state.exercises, key = { it.localKey }) { exercise ->
-                val index = state.exercises.indexOf(exercise)
-                Card(modifier = Modifier.fillMaxWidth()) {
+                val isDragging = draggingKey == exercise.localKey
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .zIndex(if (isDragging) 1f else 0f)
+                        .graphicsLayer { translationY = if (isDragging) dragOffsetY else 0f },
+                    elevation = if (isDragging) {
+                        CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    } else {
+                        CardDefaults.cardElevation()
+                    }
+                ) {
                     Row(
-                        modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Icon(
+                            Icons.Default.DragHandle,
+                            contentDescription = "Arrastar para reordenar",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .padding(horizontal = 4.dp)
+                                .pointerInput(exercise.localKey) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = {
+                                            draggingKey = exercise.localKey
+                                            dragOffsetY = 0f
+                                        },
+                                        onDragEnd = {
+                                            draggingKey = null
+                                            dragOffsetY = 0f
+                                        },
+                                        onDragCancel = {
+                                            draggingKey = null
+                                            dragOffsetY = 0f
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            change.consume()
+                                            dragOffsetY += dragAmount.y
+                                            val exercises = state.exercises
+                                            val index = exercises.indexOfFirst { it.localKey == exercise.localKey }
+                                            if (dragOffsetY > dragThresholdPx && index < exercises.lastIndex) {
+                                                viewModel.moveExercise(exercise.localKey, +1)
+                                                dragOffsetY -= dragThresholdPx
+                                            } else if (dragOffsetY < -dragThresholdPx && index > 0) {
+                                                viewModel.moveExercise(exercise.localKey, -1)
+                                                dragOffsetY += dragThresholdPx
+                                            }
+                                        }
+                                    )
+                                }
+                        )
                         Column(
                             modifier = Modifier
                                 .weight(1f)
@@ -180,17 +236,8 @@ fun WorkoutEditorScreen(
                                 )
                             }
                         }
-                        IconButton(
-                            onClick = { viewModel.moveExercise(exercise.localKey, -1) },
-                            enabled = index > 0
-                        ) {
-                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Mover para cima")
-                        }
-                        IconButton(
-                            onClick = { viewModel.moveExercise(exercise.localKey, +1) },
-                            enabled = index < state.exercises.lastIndex
-                        ) {
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Mover para baixo")
+                        IconButton(onClick = { editDialogTarget = exercise }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar exercício")
                         }
                         IconButton(onClick = { exerciseDialogTarget = exercise }) {
                             Icon(
