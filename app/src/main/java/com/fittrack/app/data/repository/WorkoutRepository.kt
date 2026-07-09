@@ -58,6 +58,15 @@ class WorkoutRepository @Inject constructor(
         return copyId
     }
 
+    /** Insere um treino recebido de outra pessoa/dispositivo como um novo item em "Meus treinos". */
+    suspend fun importTemplate(template: WorkoutTemplate, exercises: List<Exercise>): Long {
+        val newId = workoutDao.insertTemplate(
+            template.copy(id = 0, isPreset = false, createdAt = System.currentTimeMillis())
+        )
+        workoutDao.insertExercises(exercises.map { it.copy(id = 0, templateId = newId) })
+        return newId
+    }
+
     // ── Sessions ──
     fun observeAllSessions(): Flow<List<WorkoutSession>> = sessionDao.observeAllSessions()
 
@@ -81,9 +90,9 @@ class WorkoutRepository @Inject constructor(
     suspend fun deleteSession(id: Long) = sessionDao.deleteSession(id)
     suspend fun deleteSet(id: Long) = sessionDao.deleteSet(id)
 
-    suspend fun finishSession(session: WorkoutSession, totalVolume: Float) {
+    suspend fun finishSession(session: WorkoutSession, totalVolume: Float, notes: String? = session.notes) {
         sessionDao.updateSession(
-            session.copy(finishedAt = System.currentTimeMillis(), totalVolume = totalVolume)
+            session.copy(finishedAt = System.currentTimeMillis(), totalVolume = totalVolume, notes = notes)
         )
     }
 

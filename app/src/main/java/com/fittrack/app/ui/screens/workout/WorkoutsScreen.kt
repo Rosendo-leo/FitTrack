@@ -1,5 +1,8 @@
 package com.fittrack.app.ui.screens.workout
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +17,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
@@ -28,6 +33,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,8 +55,21 @@ fun WorkoutsScreen(
     viewModel: WorkoutsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val message by viewModel.message.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableIntStateOf(0) }
     var templateToDelete by remember { mutableStateOf<WorkoutTemplate?>(null) }
+
+    val context = LocalContext.current
+    LaunchedEffect(message) {
+        message?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.consumeMessage()
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let { viewModel.importFromUri(it) { newId -> onOpenEditor(newId) } } }
 
     Scaffold(
         floatingActionButton = {
@@ -61,11 +81,21 @@ fun WorkoutsScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            Text(
-                "Treinos",
-                style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.padding(16.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Treinos",
+                    style = MaterialTheme.typography.headlineLarge,
+                    modifier = Modifier.weight(1f).padding(vertical = 16.dp)
+                )
+                IconButton(onClick = {
+                    importLauncher.launch(arrayOf("application/json", "application/octet-stream"))
+                }) {
+                    Icon(Icons.Default.FileUpload, contentDescription = "Importar treino")
+                }
+            }
 
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(
@@ -95,6 +125,17 @@ fun WorkoutsScreen(
                                 Icons.Default.PlayArrow,
                                 contentDescription = "Iniciar treino",
                                 tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        IconButton(onClick = {
+                            viewModel.shareTemplate(template.id) { intent ->
+                                context.startActivity(intent)
+                            }
+                        }) {
+                            Icon(
+                                Icons.Default.Share,
+                                contentDescription = "Compartilhar",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         IconButton(onClick = { templateToDelete = template }) {

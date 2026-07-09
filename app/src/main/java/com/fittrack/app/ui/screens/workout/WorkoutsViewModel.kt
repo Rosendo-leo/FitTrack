@@ -1,13 +1,21 @@
 package com.fittrack.app.ui.screens.workout
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fittrack.app.data.local.entities.WorkoutTemplate
 import com.fittrack.app.data.repository.WorkoutRepository
+import com.fittrack.app.data.share.SharedWorkoutFormatException
+import com.fittrack.app.data.share.WorkoutShareManager
 import com.fittrack.app.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -20,9 +28,18 @@ data class WorkoutsUiState(
 
 @HiltViewModel
 class WorkoutsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: WorkoutRepository,
+    private val shareManager: WorkoutShareManager,
     private val widgetUpdater: WidgetUpdater
 ) : ViewModel() {
+
+    private val _message = MutableStateFlow<String?>(null)
+    val message: StateFlow<String?> = _message.asStateFlow()
+
+    fun consumeMessage() {
+        _message.value = null
+    }
 
     val uiState: StateFlow<WorkoutsUiState> = combine(
         repository.observeMyTemplates(),
@@ -55,6 +72,38 @@ class WorkoutsViewModel @Inject constructor(
             val sessionId = active?.id ?: repository.startSession(templateId)
             widgetUpdater.refreshAll()
             onStarted(sessionId)
+        }
+    }
+
+    /** Escreve o treino num arquivo temporário e devolve o Intent de compartilhamento. */
+    fun shareTemplate(templateId: Long, onReady: (Intent) -> Unit) {
+        viewModelScope.launch {
+            val workout = shareManager.collectSharedWorkout(templateId)
+            if (workout == null) {
+                _message.value = "Treino não encontrado."
+                return@launch
+            }
+            val file = shareManager.writeToCacheFile(workout)
+            onReady(shareManager.shareIntent(file))
+        }
+    }
+
+    /** Lê um treino de [uri] e o adiciona a "Meus treinos". */
+    fun importFromUri(uri: Uri, onImported: (Long) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val input = context.contentResolver.openInputStream(uri)
+                    ?: error("Não foi possível ler o arquivo.")
+                val data = shareManager.parseSharedWorkout(input)
+                val newId = shareManager.importAsNewTemplate(data)
+                widgetUpdater.refreshAll()
+                _message.value = "Treino \"${data.template.name}\" importado ✅"
+                onImported(newId)
+            } catch (e: SharedWorkoutFormatException) {
+                _message.value = e.message
+            } catch (e: Exception) {
+                _message.value = "Erro ao importar: ${e.message ?: e.javaClass.simpleName}"
+            }
         }
     }
 }
