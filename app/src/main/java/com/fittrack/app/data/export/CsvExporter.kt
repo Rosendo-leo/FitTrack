@@ -48,7 +48,11 @@ class CsvExporter @Inject constructor(
     suspend fun exportBodyMetrics(): String {
         val metrics = metricsRepository.observeAllMetrics().first().sortedBy { it.date }
         val header = row(
-            "data", "peso_kg", "gordura_pct", "cintura_cm", "braco_cm", "peito_cm", "notas"
+            "data", "peso_kg", "gordura_pct", "cintura_cm", "braco_cm", "peito_cm",
+            "braco_contraido_esq_cm", "braco_contraido_dir_cm",
+            "braco_relaxado_esq_cm", "braco_relaxado_dir_cm", "ombro_cm",
+            "coxa_esq_cm", "coxa_dir_cm", "antebraco_esq_cm", "antebraco_dir_cm",
+            "panturrilha_esq_cm", "panturrilha_dir_cm", "notas"
         )
         val lines = metrics.map {
             row(
@@ -58,6 +62,17 @@ class CsvExporter @Inject constructor(
                 it.waistCm ?: "",
                 it.armCm ?: "",
                 it.chestCm ?: "",
+                it.armFlexedLeftCm ?: "",
+                it.armFlexedRightCm ?: "",
+                it.armRelaxedLeftCm ?: "",
+                it.armRelaxedRightCm ?: "",
+                it.shoulderCm ?: "",
+                it.thighLeftCm ?: "",
+                it.thighRightCm ?: "",
+                it.forearmLeftCm ?: "",
+                it.forearmRightCm ?: "",
+                it.calfLeftCm ?: "",
+                it.calfRightCm ?: "",
                 it.notes ?: ""
             )
         }

@@ -24,6 +24,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -45,14 +46,18 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fittrack.app.data.local.entities.CardioType
+import com.fittrack.app.data.local.entities.GoalMetric
 import com.fittrack.app.data.preferences.DistanceUnit
 import com.fittrack.app.data.preferences.WeightUnit
 import com.fittrack.app.ui.common.LocalUserPreferences
 import com.fittrack.app.ui.common.format
+import com.fittrack.app.ui.common.isAchieved
 import com.fittrack.app.ui.common.label
+import com.fittrack.app.ui.common.progressFraction
 import com.fittrack.app.ui.common.suffix
 import com.fittrack.app.ui.common.toKg
 import com.fittrack.app.ui.common.toKm
+import com.fittrack.app.ui.common.unitSuffix
 import com.fittrack.app.ui.components.SimpleLineChart
 import com.fittrack.app.ui.theme.warning
 import java.time.Instant
@@ -67,6 +72,26 @@ private fun formatDate(epochMillis: Long): String =
     Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).format(dateFormatter)
 
 private fun String.toFloatOrNullPt(): Float? = replace(',', '.').toFloatOrNull()
+
+/** Medidas corporais (fora peso) disponíveis para o gráfico de evolução. */
+private enum class BodyMeasurementField(
+    val label: String,
+    val accessor: (com.fittrack.app.data.local.entities.BodyMetric) -> Float?
+) {
+    WAIST("Cintura", { it.waistCm }),
+    CHEST("Peito", { it.chestCm }),
+    SHOULDER("Ombro", { it.shoulderCm }),
+    ARM_FLEXED_LEFT("Braço contraído esquerdo", { it.armFlexedLeftCm }),
+    ARM_FLEXED_RIGHT("Braço contraído direito", { it.armFlexedRightCm }),
+    ARM_RELAXED_LEFT("Braço relaxado esquerdo", { it.armRelaxedLeftCm }),
+    ARM_RELAXED_RIGHT("Braço relaxado direito", { it.armRelaxedRightCm }),
+    FOREARM_LEFT("Antebraço esquerdo", { it.forearmLeftCm }),
+    FOREARM_RIGHT("Antebraço direito", { it.forearmRightCm }),
+    THIGH_LEFT("Coxa esquerda", { it.thighLeftCm }),
+    THIGH_RIGHT("Coxa direita", { it.thighRightCm }),
+    CALF_LEFT("Panturrilha esquerda", { it.calfLeftCm }),
+    CALF_RIGHT("Panturrilha direita", { it.calfRightCm })
+}
 
 @Composable
 fun ProgressScreen(viewModel: ProgressViewModel = hiltViewModel()) {
@@ -122,8 +147,16 @@ fun ProgressScreen(viewModel: ProgressViewModel = hiltViewModel()) {
         MetricDialog(
             weightUnit = prefs.weightUnit,
             onDismiss = { showMetricDialog = false },
-            onConfirm = { weight, fat, waist, arm, chest, notes ->
-                viewModel.saveMetric(prefs.weightUnit.toKg(weight), fat, waist, arm, chest, notes)
+            onConfirm = { weight, fat, waist, arm, chest,
+                armFlexedLeft, armFlexedRight, armRelaxedLeft, armRelaxedRight,
+                shoulder, thighLeft, thighRight, forearmLeft, forearmRight,
+                calfLeft, calfRight, notes ->
+                viewModel.saveMetric(
+                    prefs.weightUnit.toKg(weight), fat, waist, arm, chest,
+                    armFlexedLeft, armFlexedRight, armRelaxedLeft, armRelaxedRight,
+                    shoulder, thighLeft, thighRight, forearmLeft, forearmRight,
+                    calfLeft, calfRight, notes
+                )
                 showMetricDialog = false
             }
         )
@@ -158,15 +191,77 @@ private fun bmiColor(bmi: Float): androidx.compose.ui.graphics.Color = when {
     else -> MaterialTheme.colorScheme.error
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BodyTab(state: ProgressUiState, viewModel: ProgressViewModel) {
     val prefs = LocalUserPreferences.current
     val weightUnit = prefs.weightUnit
+    var selectedMeasurement by remember { mutableStateOf(BodyMeasurementField.WAIST) }
+    var showGoalDialog by rememberSaveable { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Metas", style = MaterialTheme.typography.titleMedium)
+                        TextButton(onClick = { showGoalDialog = true }) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Text("Nova meta")
+                        }
+                    }
+                    if (state.goals.isEmpty()) {
+                        Text(
+                            "Nenhuma meta definida ainda.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    state.goals.forEach { goal ->
+                        val current = state.latestValue(goal.metric)
+                        val achieved = goal.achievedAt != null || goal.isAchieved(current)
+                        Column(modifier = Modifier.padding(top = 12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "${goal.metric.label}: alvo %.1f %s".format(
+                                        goal.targetValue, goal.metric.unitSuffix
+                                    ) + if (achieved) " 🎉" else "",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(onClick = { viewModel.deleteGoal(goal) }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Remover meta")
+                                }
+                            }
+                            Text(
+                                if (current != null) {
+                                    "Atual: %.1f %s".format(current, goal.metric.unitSuffix)
+                                } else {
+                                    "Ainda sem registro dessa medida"
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            LinearProgressIndicator(
+                                progress = { goal.progressFraction(current) },
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
         val latestWeight = state.metrics.maxByOrNull { it.date }?.weightKg
         if (latestWeight != null && prefs.heightCm > 0f) {
             item {
@@ -205,6 +300,52 @@ private fun BodyTab(state: ProgressUiState, viewModel: ProgressViewModel) {
                 }
             }
         }
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Evolução das medidas", style = MaterialTheme.typography.titleMedium)
+                    var measurementExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = measurementExpanded,
+                        onExpandedChange = { measurementExpanded = it },
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = selectedMeasurement.label,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Medida") },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = measurementExpanded)
+                            },
+                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = measurementExpanded,
+                            onDismissRequest = { measurementExpanded = false }
+                        ) {
+                            BodyMeasurementField.entries.forEach { field ->
+                                DropdownMenuItem(
+                                    text = { Text(field.label) },
+                                    onClick = {
+                                        selectedMeasurement = field
+                                        measurementExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    val measurementPoints = state.metrics
+                        .sortedBy { it.date }
+                        .mapNotNull { m -> selectedMeasurement.accessor(m)?.let { m.date to it } }
+                    SimpleLineChart(
+                        points = measurementPoints,
+                        valueFormatter = { "%.0f cm".format(it) },
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+        }
         items(state.metrics, key = { it.id }) { metric ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -221,6 +362,17 @@ private fun BodyTab(state: ProgressUiState, viewModel: ProgressViewModel) {
                             metric.waistCm?.let { "cintura %.0f cm".format(it) },
                             metric.armCm?.let { "braço %.0f cm".format(it) },
                             metric.chestCm?.let { "peito %.0f cm".format(it) },
+                            metric.armFlexedLeftCm?.let { "braço contraído esq. %.0f cm".format(it) },
+                            metric.armFlexedRightCm?.let { "braço contraído dir. %.0f cm".format(it) },
+                            metric.armRelaxedLeftCm?.let { "braço relaxado esq. %.0f cm".format(it) },
+                            metric.armRelaxedRightCm?.let { "braço relaxado dir. %.0f cm".format(it) },
+                            metric.shoulderCm?.let { "ombro %.0f cm".format(it) },
+                            metric.thighLeftCm?.let { "coxa esq. %.0f cm".format(it) },
+                            metric.thighRightCm?.let { "coxa dir. %.0f cm".format(it) },
+                            metric.forearmLeftCm?.let { "antebraço esq. %.0f cm".format(it) },
+                            metric.forearmRightCm?.let { "antebraço dir. %.0f cm".format(it) },
+                            metric.calfLeftCm?.let { "panturrilha esq. %.0f cm".format(it) },
+                            metric.calfRightCm?.let { "panturrilha dir. %.0f cm".format(it) },
                             metric.notes
                         ).joinToString(" · ")
                         if (details.isNotBlank()) {
@@ -251,6 +403,73 @@ private fun BodyTab(state: ProgressUiState, viewModel: ProgressViewModel) {
             }
         }
     }
+
+    if (showGoalDialog) {
+        GoalDialog(
+            onDismiss = { showGoalDialog = false },
+            onConfirm = { metric, target ->
+                viewModel.saveGoal(metric, target)
+                showGoalDialog = false
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GoalDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (metric: GoalMetric, targetValue: Float) -> Unit
+) {
+    var metric by rememberSaveable { mutableStateOf(GoalMetric.WEIGHT) }
+    var targetText by rememberSaveable { mutableStateOf("") }
+    var metricExpanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Nova meta") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                ExposedDropdownMenuBox(
+                    expanded = metricExpanded,
+                    onExpandedChange = { metricExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = metric.label,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Métrica") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = metricExpanded)
+                        },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = metricExpanded,
+                        onDismissRequest = { metricExpanded = false }
+                    ) {
+                        GoalMetric.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option.label) },
+                                onClick = {
+                                    metric = option
+                                    metricExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+                NumberField(targetText, { targetText = it }, "Alvo (${metric.unitSuffix})")
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { targetText.toFloatOrNullPt()?.let { onConfirm(metric, it) } },
+                enabled = targetText.toFloatOrNullPt() != null
+            ) { Text("Salvar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -425,7 +644,13 @@ private fun MetricDialog(
     onDismiss: () -> Unit,
     onConfirm: (
         weight: Float, bodyFatPct: Float?, waistCm: Float?,
-        armCm: Float?, chestCm: Float?, notes: String?
+        armCm: Float?, chestCm: Float?,
+        armFlexedLeftCm: Float?, armFlexedRightCm: Float?,
+        armRelaxedLeftCm: Float?, armRelaxedRightCm: Float?,
+        shoulderCm: Float?, thighLeftCm: Float?, thighRightCm: Float?,
+        forearmLeftCm: Float?, forearmRightCm: Float?,
+        calfLeftCm: Float?, calfRightCm: Float?,
+        notes: String?
     ) -> Unit
 ) {
     var weight by rememberSaveable { mutableStateOf("") }
@@ -433,6 +658,17 @@ private fun MetricDialog(
     var waist by rememberSaveable { mutableStateOf("") }
     var arm by rememberSaveable { mutableStateOf("") }
     var chest by rememberSaveable { mutableStateOf("") }
+    var armFlexedLeft by rememberSaveable { mutableStateOf("") }
+    var armFlexedRight by rememberSaveable { mutableStateOf("") }
+    var armRelaxedLeft by rememberSaveable { mutableStateOf("") }
+    var armRelaxedRight by rememberSaveable { mutableStateOf("") }
+    var shoulder by rememberSaveable { mutableStateOf("") }
+    var thighLeft by rememberSaveable { mutableStateOf("") }
+    var thighRight by rememberSaveable { mutableStateOf("") }
+    var forearmLeft by rememberSaveable { mutableStateOf("") }
+    var forearmRight by rememberSaveable { mutableStateOf("") }
+    var calfLeft by rememberSaveable { mutableStateOf("") }
+    var calfRight by rememberSaveable { mutableStateOf("") }
     var notes by rememberSaveable { mutableStateOf("") }
 
     AlertDialog(
@@ -448,6 +684,17 @@ private fun MetricDialog(
                 NumberField(waist, { waist = it }, "Cintura (cm)")
                 NumberField(arm, { arm = it }, "Braço (cm)")
                 NumberField(chest, { chest = it }, "Peito (cm)")
+                NumberField(armFlexedLeft, { armFlexedLeft = it }, "Braço contraído esquerdo (cm)")
+                NumberField(armFlexedRight, { armFlexedRight = it }, "Braço contraído direito (cm)")
+                NumberField(armRelaxedLeft, { armRelaxedLeft = it }, "Braço relaxado esquerdo (cm)")
+                NumberField(armRelaxedRight, { armRelaxedRight = it }, "Braço relaxado direito (cm)")
+                NumberField(shoulder, { shoulder = it }, "Ombro (cm)")
+                NumberField(thighLeft, { thighLeft = it }, "Coxa esquerda (cm)")
+                NumberField(thighRight, { thighRight = it }, "Coxa direita (cm)")
+                NumberField(forearmLeft, { forearmLeft = it }, "Antebraço esquerdo (cm)")
+                NumberField(forearmRight, { forearmRight = it }, "Antebraço direito (cm)")
+                NumberField(calfLeft, { calfLeft = it }, "Panturrilha esquerda (cm)")
+                NumberField(calfRight, { calfRight = it }, "Panturrilha direita (cm)")
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
@@ -466,6 +713,17 @@ private fun MetricDialog(
                             waist.toFloatOrNullPt(),
                             arm.toFloatOrNullPt(),
                             chest.toFloatOrNullPt(),
+                            armFlexedLeft.toFloatOrNullPt(),
+                            armFlexedRight.toFloatOrNullPt(),
+                            armRelaxedLeft.toFloatOrNullPt(),
+                            armRelaxedRight.toFloatOrNullPt(),
+                            shoulder.toFloatOrNullPt(),
+                            thighLeft.toFloatOrNullPt(),
+                            thighRight.toFloatOrNullPt(),
+                            forearmLeft.toFloatOrNullPt(),
+                            forearmRight.toFloatOrNullPt(),
+                            calfLeft.toFloatOrNullPt(),
+                            calfRight.toFloatOrNullPt(),
                             notes.ifBlank { null }
                         )
                     }

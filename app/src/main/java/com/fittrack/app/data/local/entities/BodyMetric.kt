@@ -16,5 +16,16 @@ data class BodyMetric(
     val waistCm: Float? = null,
     val armCm: Float? = null,
     val chestCm: Float? = null,
+    val armFlexedLeftCm: Float? = null,
+    val armFlexedRightCm: Float? = null,
+    val armRelaxedLeftCm: Float? = null,
+    val armRelaxedRightCm: Float? = null,
+    val shoulderCm: Float? = null,
+    val thighLeftCm: Float? = null,
+    val thighRightCm: Float? = null,
+    val forearmLeftCm: Float? = null,
+    val forearmRightCm: Float? = null,
+    val calfLeftCm: Float? = null,
+    val calfRightCm: Float? = null,
     val notes: String? = null
 )

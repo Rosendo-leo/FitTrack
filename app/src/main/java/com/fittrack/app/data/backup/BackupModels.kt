@@ -128,17 +128,38 @@ data class BackupBodyMetric(
     val waistCm: Float? = null,
     val armCm: Float? = null,
     val chestCm: Float? = null,
+    val armFlexedLeftCm: Float? = null,
+    val armFlexedRightCm: Float? = null,
+    val armRelaxedLeftCm: Float? = null,
+    val armRelaxedRightCm: Float? = null,
+    val shoulderCm: Float? = null,
+    val thighLeftCm: Float? = null,
+    val thighRightCm: Float? = null,
+    val forearmLeftCm: Float? = null,
+    val forearmRightCm: Float? = null,
+    val calfLeftCm: Float? = null,
+    val calfRightCm: Float? = null,
     val notes: String? = null
 ) {
     fun toEntity(id: Long = this.id) = BodyMetric(
         id = id, date = date, weightKg = weightKg, bodyFatPct = bodyFatPct,
-        waistCm = waistCm, armCm = armCm, chestCm = chestCm, notes = notes
+        waistCm = waistCm, armCm = armCm, chestCm = chestCm,
+        armFlexedLeftCm = armFlexedLeftCm, armFlexedRightCm = armFlexedRightCm,
+        armRelaxedLeftCm = armRelaxedLeftCm, armRelaxedRightCm = armRelaxedRightCm,
+        shoulderCm = shoulderCm, thighLeftCm = thighLeftCm, thighRightCm = thighRightCm,
+        forearmLeftCm = forearmLeftCm, forearmRightCm = forearmRightCm,
+        calfLeftCm = calfLeftCm, calfRightCm = calfRightCm, notes = notes
     )
 
     companion object {
         fun from(e: BodyMetric) = BackupBodyMetric(
             id = e.id, date = e.date, weightKg = e.weightKg, bodyFatPct = e.bodyFatPct,
-            waistCm = e.waistCm, armCm = e.armCm, chestCm = e.chestCm, notes = e.notes
+            waistCm = e.waistCm, armCm = e.armCm, chestCm = e.chestCm,
+            armFlexedLeftCm = e.armFlexedLeftCm, armFlexedRightCm = e.armFlexedRightCm,
+            armRelaxedLeftCm = e.armRelaxedLeftCm, armRelaxedRightCm = e.armRelaxedRightCm,
+            shoulderCm = e.shoulderCm, thighLeftCm = e.thighLeftCm, thighRightCm = e.thighRightCm,
+            forearmLeftCm = e.forearmLeftCm, forearmRightCm = e.forearmRightCm,
+            calfLeftCm = e.calfLeftCm, calfRightCm = e.calfRightCm, notes = e.notes
         )
     }
 }

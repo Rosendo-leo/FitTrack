@@ -8,6 +8,7 @@ import androidx.room.Room
 import com.fittrack.app.data.local.AppDatabase
 import com.fittrack.app.data.local.dao.BackupDao
 import com.fittrack.app.data.local.dao.CardioDao
+import com.fittrack.app.data.local.dao.GoalDao
 import com.fittrack.app.data.local.dao.MetricDao
 import com.fittrack.app.data.local.dao.SessionDao
 import com.fittrack.app.data.local.dao.WorkoutDao
@@ -28,7 +29,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME)
-            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4)
             .build()
 
     @Provides
@@ -45,6 +46,9 @@ object DatabaseModule {
 
     @Provides
     fun provideBackupDao(db: AppDatabase): BackupDao = db.backupDao()
+
+    @Provides
+    fun provideGoalDao(db: AppDatabase): GoalDao = db.goalDao()
 
     @Provides
     @Singleton
