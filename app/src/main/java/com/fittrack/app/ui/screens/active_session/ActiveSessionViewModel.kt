@@ -34,6 +34,8 @@ data class ActiveSessionUiState(
     val session: WorkoutSession? = null,
     val templateName: String = "Treino livre",
     val exercises: List<ExerciseWithSets> = emptyList(),
+    /** Índice do exercício em foco na sessão (um por vez, na ordem do treino). */
+    val currentExerciseIndex: Int = 0,
     val restSecondsLeft: Int? = null,
     val restTotalSeconds: Int = 90,
     /** Duração total do descanso em curso (pode vir do exercício, não do padrão). */
@@ -48,6 +50,10 @@ data class ActiveSessionUiState(
             .fold(0f) { acc, set -> acc + set.weightKg * set.reps }
 
     val totalSets: Int get() = exercises.sumOf { it.sets.size }
+
+    val currentExercise: ExerciseWithSets? get() = exercises.getOrNull(currentExerciseIndex)
+    val hasPreviousExercise: Boolean get() = currentExerciseIndex > 0
+    val hasNextExercise: Boolean get() = currentExerciseIndex < exercises.lastIndex
 }
 
 @HiltViewModel
@@ -142,6 +148,20 @@ class ActiveSessionViewModel @Inject constructor(
         viewModelScope.launch { repository.deleteSet(set.id) }
     }
 
+    // ── Navegação entre exercícios (um por vez, na ordem do treino) ──
+
+    fun nextExercise() {
+        _uiState.update {
+            it.copy(currentExerciseIndex = (it.currentExerciseIndex + 1).coerceAtMost(it.exercises.lastIndex.coerceAtLeast(0)))
+        }
+    }
+
+    fun previousExercise() {
+        _uiState.update {
+            it.copy(currentExerciseIndex = (it.currentExerciseIndex - 1).coerceAtLeast(0))
+        }
+    }
+
     // ── Timer de descanso ──
 
     fun adjustRestDuration(deltaSeconds: Int) {
@@ -182,12 +202,12 @@ class ActiveSessionViewModel @Inject constructor(
 
     // ── Encerramento ──
 
-    fun finishSession() {
+    fun finishSession(notes: String? = null) {
         val session = _uiState.value.session ?: return
         viewModelScope.launch {
             restJob?.cancel()
             notificationHelper.cancelRestTimer()
-            repository.finishSession(session, _uiState.value.totalVolume)
+            repository.finishSession(session, _uiState.value.totalVolume, notes?.trim()?.ifBlank { null })
             widgetUpdater.refreshAll()
             _uiState.update { it.copy(finished = true) }
         }
