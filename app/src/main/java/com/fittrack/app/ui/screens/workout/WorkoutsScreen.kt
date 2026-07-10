@@ -1,8 +1,10 @@
 package com.fittrack.app.ui.screens.workout
 
+import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -19,6 +22,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -41,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,6 +63,7 @@ fun WorkoutsScreen(
     val message by viewModel.message.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableIntStateOf(0) }
     var templateToDelete by remember { mutableStateOf<WorkoutTemplate?>(null) }
+    var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     val context = LocalContext.current
     LaunchedEffect(message) {
@@ -134,7 +140,16 @@ fun WorkoutsScreen(
                         }) {
                             Icon(
                                 Icons.Default.Share,
-                                contentDescription = "Compartilhar",
+                                contentDescription = "Compartilhar arquivo",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        IconButton(onClick = {
+                            viewModel.shareTemplateAsQr(template.id) { bitmap -> qrBitmap = bitmap }
+                        }) {
+                            Icon(
+                                Icons.Default.QrCode,
+                                contentDescription = "Mostrar QR code",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -180,6 +195,31 @@ fun WorkoutsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { templateToDelete = null }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    qrBitmap?.let { bitmap ->
+        AlertDialog(
+            onDismissRequest = { qrBitmap = null },
+            title = { Text("QR code do treino") },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "QR code do treino",
+                        modifier = Modifier.size(240.dp)
+                    )
+                    Text(
+                        "O app ainda não lê QR codes de volta — use \"Compartilhar arquivo\" para a outra pessoa importar o treino.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { qrBitmap = null }) { Text("Fechar") }
             }
         )
     }

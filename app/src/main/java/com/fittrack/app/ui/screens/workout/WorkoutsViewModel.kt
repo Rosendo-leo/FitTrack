@@ -2,12 +2,14 @@ package com.fittrack.app.ui.screens.workout
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fittrack.app.data.local.entities.WorkoutTemplate
 import com.fittrack.app.data.repository.WorkoutRepository
 import com.fittrack.app.data.share.SharedWorkoutFormatException
+import com.fittrack.app.data.share.SharedWorkoutTooLargeException
 import com.fittrack.app.data.share.WorkoutShareManager
 import com.fittrack.app.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -85,6 +87,22 @@ class WorkoutsViewModel @Inject constructor(
             }
             val file = shareManager.writeToCacheFile(workout)
             onReady(shareManager.shareIntent(file))
+        }
+    }
+
+    /** Gera um QR code com o treino codificado, para mostrar na tela (sem precisar de arquivo). */
+    fun shareTemplateAsQr(templateId: Long, onReady: (Bitmap) -> Unit) {
+        viewModelScope.launch {
+            val workout = shareManager.collectSharedWorkout(templateId)
+            if (workout == null) {
+                _message.value = "Treino não encontrado."
+                return@launch
+            }
+            try {
+                onReady(shareManager.generateQrBitmap(workout))
+            } catch (e: SharedWorkoutTooLargeException) {
+                _message.value = e.message
+            }
         }
     }
 

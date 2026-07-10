@@ -45,6 +45,11 @@ data class ExercisePr(
     val date: Long
 )
 
+data class SessionRpe(
+    val date: Long,
+    val avgRpe: Float
+)
+
 @Dao
 interface SessionDao {
 
@@ -162,6 +167,16 @@ interface SessionDao {
         ") ORDER BY setNumber"
     )
     suspend fun lastSetsForExercise(exerciseId: Long, excludeSessionId: Long): List<SetRecord>
+
+    // RPE médio por sessão finalizada (esforço percebido ao longo do tempo)
+    @Query(
+        "SELECT s.startedAt AS date, AVG(sr.rpe) AS avgRpe " +
+        "FROM set_records sr " +
+        "JOIN workout_sessions s ON sr.sessionId = s.id " +
+        "WHERE sr.rpe IS NOT NULL AND sr.isWarmup = 0 AND s.finishedAt IS NOT NULL " +
+        "GROUP BY s.id ORDER BY s.startedAt"
+    )
+    fun observeSessionAvgRpe(): Flow<List<SessionRpe>>
 
     // Melhor carga registrada para um exercício (detecção de PR)
     @Query(

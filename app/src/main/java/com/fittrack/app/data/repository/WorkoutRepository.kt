@@ -2,6 +2,7 @@ package com.fittrack.app.data.repository
 
 import com.fittrack.app.data.local.dao.ExercisePr
 import com.fittrack.app.data.local.dao.SessionDao
+import com.fittrack.app.data.local.dao.SessionRpe
 import com.fittrack.app.data.local.dao.SessionWithTemplateName
 import com.fittrack.app.data.local.dao.SetExportRow
 import com.fittrack.app.data.local.dao.SetSample
@@ -107,6 +108,9 @@ class WorkoutRepository @Inject constructor(
 
     fun observeWorkingSetsFor(exerciseName: String): Flow<List<SetSample>> =
         sessionDao.observeWorkingSetsFor(exerciseName)
+
+    /** RPE médio por sessão finalizada, em ordem cronológica. */
+    fun observeSessionAvgRpe(): Flow<List<SessionRpe>> = sessionDao.observeSessionAvgRpe()
 
     /** Séries do exercício na última sessão finalizada (para sugestão de carga). */
     suspend fun lastPerformance(exerciseId: Long, excludeSessionId: Long): List<SetRecord> =

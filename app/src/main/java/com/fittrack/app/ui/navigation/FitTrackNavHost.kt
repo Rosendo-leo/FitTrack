@@ -94,6 +94,10 @@ fun FitTrackNavHost(
                 }
                 onWidgetActionHandled()
             }
+            is WidgetAction.OpenActiveSession -> {
+                navController.navigate(activeSessionRoute(widgetAction.sessionId))
+                onWidgetActionHandled()
+            }
             null -> Unit
         }
     }

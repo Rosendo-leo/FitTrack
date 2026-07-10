@@ -7,6 +7,7 @@ import com.fittrack.app.data.preferences.UserPreferencesRepository
 import com.fittrack.app.domain.presets.PresetSeeder
 import com.fittrack.app.worker.DriveSyncWorker
 import com.fittrack.app.worker.ReminderScheduler
+import com.fittrack.app.worker.UpdateCheckWorker
 import kotlinx.coroutines.flow.first
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +41,7 @@ class FitTrackApplication : Application(), Configuration.Provider {
         applicationScope.launch {
             presetSeeder.seedIfNeeded()
             reminderScheduler.rescheduleAll()
+            UpdateCheckWorker.schedule(this@FitTrackApplication)
             if (preferencesRepository.preferences.first().driveSyncEnabled) {
                 DriveSyncWorker.schedule(this@FitTrackApplication)
             }

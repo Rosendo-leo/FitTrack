@@ -51,6 +51,7 @@ data class WeeklyData(val weekDays: List<Boolean>, val streakDays: Int)
 
 data class ActiveSessionData(
     val active: Boolean,
+    val sessionId: Long = -1L,
     val templateName: String = "",
     val totalSets: Int = 0,
     val totalVolume: Float = 0f,
@@ -104,6 +105,7 @@ suspend fun loadActiveSessionData(context: Context): ActiveSessionData {
         ?: "Treino livre"
     return ActiveSessionData(
         active = true,
+        sessionId = session.id,
         templateName = templateName,
         totalSets = sets.size,
         totalVolume = sets.filterNot { it.isWarmup }

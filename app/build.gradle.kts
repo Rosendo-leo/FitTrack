@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.detekt)
 }
 
 android {
@@ -58,10 +59,28 @@ android {
         compose = true
         buildConfig = true
     }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+    sourceSets {
+        getByName("test") {
+            // Schemas exportados pelo Room (ksp room.schemaLocation), usados pelo MigrationTestHelper.
+            assets.srcDirs("$projectDir/schemas")
+        }
+    }
 }
 
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    autoCorrect = false
+    // Sem baseline.xml ainda (precisa rodar `./gradlew detektBaseline` localmente,
+    // com SDK disponível, para gerar a partir do estado atual do código).
 }
 
 dependencies {
@@ -91,6 +110,11 @@ dependencies {
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
 
+    implementation(libs.vico.compose)
+    implementation(libs.vico.compose.m3)
+
+    implementation(libs.zxing.core)
+
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
@@ -107,4 +131,9 @@ dependencies {
     implementation(libs.play.services.auth)
 
     testImplementation(libs.junit)
+    testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.arch.core.testing)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

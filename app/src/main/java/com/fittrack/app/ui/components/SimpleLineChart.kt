@@ -1,6 +1,5 @@
 package com.fittrack.app.ui.components
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,14 +9,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.common.fill
+import com.patrykandpatrick.vico.compose.m3.rememberM3VicoTheme
+import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -29,9 +34,10 @@ private fun formatChartDate(epochMillis: Long): String =
     Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).format(chartDateFormatter)
 
 /**
- * Gráfico de linha minimalista para séries temporais (peso, volume etc).
- * Pontos ordenados por x (timestamp). Desenha linha, área com gradiente
- * e destaca o último ponto.
+ * Gráfico de linha minimalista para séries temporais (peso, volume etc), via Vico.
+ * Pontos ordenados por x (timestamp). Min/máx e datas extremas ficam em texto ao
+ * redor do gráfico (como no componente Canvas original), então os eixos do Vico
+ * ficam ocultos — só a linha e a área com gradiente aparecem.
  */
 @Composable
 fun SimpleLineChart(
@@ -53,7 +59,18 @@ fun SimpleLineChart(
     val minValue = sorted.minOf { it.second }
     val maxValue = sorted.maxOf { it.second }
     val lineColor = MaterialTheme.colorScheme.primary
-    val gridColor = MaterialTheme.colorScheme.outline
+
+    val modelProducer = remember { CartesianChartModelProducer() }
+    // Dias desde a época (não milissegundos) para manter os valores de x num range
+    // pequeno — mais amigável para o Vico escalar o eixo internamente.
+    val xValues = remember(sorted) { sorted.map { it.first / 86_400_000.0 } }
+    val yValues = remember(sorted) { sorted.map { it.second.toDouble() } }
+
+    LaunchedEffect(xValues, yValues) {
+        modelProducer.runTransaction {
+            lineSeries { series(xValues, yValues) }
+        }
+    }
 
     Column(modifier = modifier) {
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -63,70 +80,20 @@ fun SimpleLineChart(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(160.dp)
-                .padding(vertical = 6.dp)
-        ) {
-            val minX = sorted.first().first.toFloat()
-            val maxX = sorted.last().first.toFloat()
-            val spanX = (maxX - minX).takeIf { it > 0f } ?: 1f
-            // Margem vertical de 10% para a linha não encostar nas bordas
-            val spanValue = (maxValue - minValue).takeIf { it > 0f } ?: 1f
-            val lowValue = minValue - spanValue * 0.1f
-            val highValue = maxValue + spanValue * 0.1f
-            val spanY = highValue - lowValue
-
-            fun toOffset(point: Pair<Long, Float>): Offset = Offset(
-                x = (point.first - minX) / spanX * size.width,
-                y = size.height - (point.second - lowValue) / spanY * size.height
-            )
-
-            // Linhas-guia horizontais
-            val dash = PathEffect.dashPathEffect(floatArrayOf(8f, 8f))
-            for (fraction in listOf(0f, 0.5f, 1f)) {
-                val y = size.height * fraction
-                drawLine(
-                    color = gridColor.copy(alpha = 0.4f),
-                    start = Offset(0f, y),
-                    end = Offset(size.width, y),
-                    strokeWidth = 1f,
-                    pathEffect = dash
-                )
-            }
-
-            val linePath = Path()
-            val areaPath = Path()
-            sorted.forEachIndexed { index, point ->
-                val offset = toOffset(point)
-                if (index == 0) {
-                    linePath.moveTo(offset.x, offset.y)
-                    areaPath.moveTo(offset.x, size.height)
-                    areaPath.lineTo(offset.x, offset.y)
-                } else {
-                    linePath.lineTo(offset.x, offset.y)
-                    areaPath.lineTo(offset.x, offset.y)
-                }
-            }
-            areaPath.lineTo(toOffset(sorted.last()).x, size.height)
-            areaPath.close()
-
-            drawPath(
-                path = areaPath,
-                brush = Brush.verticalGradient(
-                    colors = listOf(lineColor.copy(alpha = 0.25f), lineColor.copy(alpha = 0f))
-                )
-            )
-            drawPath(
-                path = linePath,
-                color = lineColor,
-                style = Stroke(width = 5f, cap = StrokeCap.Round)
-            )
-            drawCircle(
-                color = lineColor,
-                radius = 10f,
-                center = toOffset(sorted.last())
+        ProvideVicoTheme(rememberM3VicoTheme()) {
+            CartesianChartHost(
+                chart = rememberCartesianChart(
+                    rememberLineCartesianLayer(
+                        lineProvider = LineCartesianLayer.LineProvider.series(
+                            rememberLine(fill = LineCartesianLayer.LineFill.single(fill(lineColor)))
+                        )
+                    )
+                ),
+                modelProducer = modelProducer,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .padding(vertical = 6.dp)
             )
         }
         Row(

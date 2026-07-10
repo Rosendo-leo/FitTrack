@@ -34,7 +34,9 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val ACTION_REGISTER_WEIGHT = "com.fittrack.app.action.REGISTER_WEIGHT"
         const val ACTION_START_WORKOUT = "com.fittrack.app.action.START_WORKOUT"
+        const val ACTION_OPEN_ACTIVE_SESSION = "com.fittrack.app.action.OPEN_ACTIVE_SESSION"
         const val EXTRA_TEMPLATE_ID = "templateId"
+        const val EXTRA_SESSION_ID = "sessionId"
     }
 
     @Inject
@@ -49,6 +51,10 @@ class MainActivity : ComponentActivity() {
             ACTION_START_WORKOUT -> WidgetAction.StartWorkout(
                 intent.getLongExtra(EXTRA_TEMPLATE_ID, -1L).takeIf { it > 0 }
             )
+            ACTION_OPEN_ACTIVE_SESSION -> intent.getLongExtra(EXTRA_SESSION_ID, -1L)
+                .takeIf { it > 0 }
+                ?.let { WidgetAction.OpenActiveSession(it) }
+                ?: pendingWidgetAction
             else -> pendingWidgetAction
         }
     }

@@ -15,6 +15,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.fittrack.app.R
+import com.fittrack.app.update.UpdateInfo
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -28,12 +29,14 @@ class NotificationHelper @Inject constructor(
         const val CHANNEL_REST_TIMER = "rest_timer"
         const val CHANNEL_REST_DONE = "rest_done"
         const val CHANNEL_ACHIEVEMENTS = "achievements"
+        const val CHANNEL_UPDATES = "updates"
 
         const val ID_WORKOUT_REMINDER = 1001
         const val ID_WEIGHT_REMINDER = 1002
         const val ID_REST_TIMER = 1003
         const val ID_PR = 1004
         const val ID_REST_DONE = 1005
+        const val ID_UPDATE_AVAILABLE = 1006
     }
 
     init {
@@ -72,6 +75,13 @@ class NotificationHelper @Inject constructor(
                 "Conquistas",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply { description = "Novos recordes pessoais" }
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_UPDATES,
+                "Atualizações",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply { description = "Avisa quando uma nova versão do app está disponível" }
         )
     }
 
@@ -133,20 +143,21 @@ class NotificationHelper @Inject constructor(
     /** Notificação persistente e silenciosa com o countdown do descanso. */
     fun showRestTimer(remainingSeconds: Int, totalSeconds: Int) {
         if (!canNotify()) return
-        NotificationManagerCompat.from(context).notify(
-            ID_REST_TIMER,
-            builder(CHANNEL_REST_TIMER)
-                .setContentTitle("Descanso ⏱️")
-                .setContentText(
-                    "%02d:%02d restantes".format(remainingSeconds / 60, remainingSeconds % 60)
-                )
-                .setProgress(totalSeconds, totalSeconds - remainingSeconds, false)
-                .setOngoing(true)
-                .setAutoCancel(false)
-                .setOnlyAlertOnce(true)
-                .build()
-        )
+        NotificationManagerCompat.from(context).notify(ID_REST_TIMER, buildRestTimerNotification(remainingSeconds, totalSeconds))
     }
+
+    /** Usado pelo [com.fittrack.app.session.RestTimerService] para iniciar em primeiro plano. */
+    fun buildRestTimerNotification(remainingSeconds: Int, totalSeconds: Int) =
+        builder(CHANNEL_REST_TIMER)
+            .setContentTitle("Descanso ⏱️")
+            .setContentText(
+                "%02d:%02d restantes".format(remainingSeconds / 60, remainingSeconds % 60)
+            )
+            .setProgress(totalSeconds, totalSeconds - remainingSeconds, false)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setOnlyAlertOnce(true)
+            .build()
 
     fun cancelRestTimer() {
         NotificationManagerCompat.from(context).cancel(ID_REST_TIMER)
@@ -167,6 +178,18 @@ class NotificationHelper @Inject constructor(
 
     fun cancelRestFinished() {
         NotificationManagerCompat.from(context).cancel(ID_REST_DONE)
+    }
+
+    /** Disparado pelo [com.fittrack.app.worker.UpdateCheckWorker] quando há release novo no GitHub. */
+    fun showUpdateAvailable(info: UpdateInfo) {
+        if (!canNotify()) return
+        NotificationManagerCompat.from(context).notify(
+            ID_UPDATE_AVAILABLE,
+            builder(CHANNEL_UPDATES)
+                .setContentTitle("Atualização disponível 🚀")
+                .setContentText("FitTrack ${info.versionName} já pode ser instalado.")
+                .build()
+        )
     }
 
     fun vibrate(durationMs: Long = 500) {

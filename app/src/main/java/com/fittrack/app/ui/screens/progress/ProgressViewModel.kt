@@ -54,7 +54,9 @@ data class StrengthUiState(
     /** Pontos (data, 1RM estimado em kg) por sessão. */
     val strengthPoints: List<Pair<Long, Float>> = emptyList(),
     /** Pontos (início da semana, volume em kg) por semana. */
-    val weeklyVolumePoints: List<Pair<Long, Float>> = emptyList()
+    val weeklyVolumePoints: List<Pair<Long, Float>> = emptyList(),
+    /** Pontos (data da sessão, RPE médio) — esforço percebido ao longo do tempo. */
+    val rpePoints: List<Pair<Long, Float>> = emptyList()
 )
 
 @HiltViewModel
@@ -110,15 +112,17 @@ class ProgressViewModel @Inject constructor(
         workoutRepository.observeTrainedExerciseNames(),
         effectiveExercise,
         strengthPoints,
-        workoutRepository.observeFinishedSessions()
-    ) { names, selected, points, sessions ->
+        workoutRepository.observeFinishedSessions(),
+        workoutRepository.observeSessionAvgRpe()
+    ) { names, selected, points, sessions, rpe ->
         StrengthUiState(
             exerciseNames = names,
             selectedExercise = selected,
             strengthPoints = points,
             weeklyVolumePoints = weeklyVolume(
                 sessions.map { it.session.startedAt to it.session.totalVolume }
-            )
+            ),
+            rpePoints = rpe.map { it.date to it.avgRpe }
         )
     }.stateIn(
         scope = viewModelScope,

@@ -1,5 +1,6 @@
 package com.fittrack.app.ui.screens.active_session
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,10 +9,10 @@ import com.fittrack.app.data.local.entities.SetRecord
 import com.fittrack.app.data.local.entities.WorkoutSession
 import com.fittrack.app.data.repository.WorkoutRepository
 import com.fittrack.app.notifications.NotificationHelper
+import com.fittrack.app.session.RestTimerService
 import com.fittrack.app.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -61,6 +62,7 @@ class ActiveSessionViewModel @Inject constructor(
     private val repository: WorkoutRepository,
     private val notificationHelper: NotificationHelper,
     private val widgetUpdater: WidgetUpdater,
+    @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -73,9 +75,17 @@ class ActiveSessionViewModel @Inject constructor(
     private val _prEvents = MutableSharedFlow<String>()
     val prEvents: SharedFlow<String> = _prEvents.asSharedFlow()
 
-    private var restJob: Job? = null
-
     init {
+        viewModelScope.launch {
+            RestTimerService.state.collect { rest ->
+                _uiState.update {
+                    it.copy(
+                        restSecondsLeft = rest?.secondsLeft,
+                        restCurrentTotalSeconds = rest?.totalSeconds ?: it.restCurrentTotalSeconds
+                    )
+                }
+            }
+        }
         viewModelScope.launch {
             val session = repository.getSession(sessionId)
             if (session == null) {
@@ -170,34 +180,18 @@ class ActiveSessionViewModel @Inject constructor(
         }
     }
 
-    /** [overrideSeconds] usa o descanso próprio do exercício, quando definido. */
+    /**
+     * [overrideSeconds] usa o descanso próprio do exercício, quando definido.
+     * O countdown roda no [RestTimerService] (foreground service), não no viewModelScope,
+     * para sobreviver caso o sistema mate o processo do app em segundo plano.
+     */
     fun startRest(overrideSeconds: Int? = null) {
-        restJob?.cancel()
-        notificationHelper.cancelRestFinished()
-        restJob = viewModelScope.launch {
-            val total = overrideSeconds ?: _uiState.value.restTotalSeconds
-            _uiState.update { it.copy(restCurrentTotalSeconds = total) }
-            for (remaining in total downTo 1) {
-                _uiState.update { it.copy(restSecondsLeft = remaining) }
-                notificationHelper.showRestTimer(remaining, total)
-                delay(1_000)
-            }
-            _uiState.update { it.copy(restSecondsLeft = null) }
-            notificationHelper.cancelRestTimer()
-            notificationHelper.showRestFinished()
-            notificationHelper.vibrate()
-        }
+        val total = overrideSeconds ?: _uiState.value.restTotalSeconds
+        RestTimerService.start(appContext, total)
     }
 
     fun skipRest() {
-        restJob?.cancel()
-        _uiState.update { it.copy(restSecondsLeft = null) }
-        notificationHelper.cancelRestTimer()
-    }
-
-    override fun onCleared() {
-        notificationHelper.cancelRestTimer()
-        super.onCleared()
+        RestTimerService.skip(appContext)
     }
 
     // ── Encerramento ──
@@ -205,8 +199,7 @@ class ActiveSessionViewModel @Inject constructor(
     fun finishSession(notes: String? = null) {
         val session = _uiState.value.session ?: return
         viewModelScope.launch {
-            restJob?.cancel()
-            notificationHelper.cancelRestTimer()
+            RestTimerService.skip(appContext)
             repository.finishSession(session, _uiState.value.totalVolume, notes?.trim()?.ifBlank { null })
             widgetUpdater.refreshAll()
             _uiState.update { it.copy(finished = true) }
@@ -215,8 +208,7 @@ class ActiveSessionViewModel @Inject constructor(
 
     fun discardSession() {
         viewModelScope.launch {
-            restJob?.cancel()
-            notificationHelper.cancelRestTimer()
+            RestTimerService.skip(appContext)
             repository.deleteSession(sessionId)
             widgetUpdater.refreshAll()
             _uiState.update { it.copy(finished = true) }

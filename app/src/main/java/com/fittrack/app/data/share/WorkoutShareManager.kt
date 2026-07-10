@@ -2,10 +2,16 @@ package com.fittrack.app.data.share
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.net.Uri
 import androidx.core.content.FileProvider
 import com.fittrack.app.BuildConfig
 import com.fittrack.app.data.repository.WorkoutRepository
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.qrcode.QRCodeWriter
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,6 +22,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 class SharedWorkoutFormatException(message: String) : Exception(message)
+
+/** Treino grande demais para caber num QR code de forma escaneável. */
+class SharedWorkoutTooLargeException(message: String) : Exception(message)
 
 @Singleton
 class WorkoutShareManager @Inject constructor(
@@ -59,6 +68,36 @@ class WorkoutShareManager @Inject constructor(
         }
         return Intent.createChooser(sendIntent, "Compartilhar treino")
     }
+
+    /**
+     * Gera um QR code (preto e branco, [sizePx]×[sizePx]) com o treino codificado como JSON —
+     * não depende de rede nem de servidor. Só é útil para compartilhar entre dois FitTrack:
+     * um leitor de QR genérico mostraria o JSON bruto, não um treino importável.
+     */
+    suspend fun generateQrBitmap(workout: SharedWorkout, sizePx: Int = 800): Bitmap =
+        withContext(Dispatchers.Default) {
+            val text = json.encodeToString(SharedWorkout.serializer(), workout)
+            val matrix = try {
+                QRCodeWriter().encode(
+                    text,
+                    BarcodeFormat.QR_CODE,
+                    sizePx,
+                    sizePx,
+                    mapOf(EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.L)
+                )
+            } catch (e: Exception) {
+                throw SharedWorkoutTooLargeException(
+                    "Esse treino tem exercícios/notas demais para caber num QR code. Use \"Compartilhar arquivo\"."
+                )
+            }
+            val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.RGB_565)
+            for (x in 0 until sizePx) {
+                for (y in 0 until sizePx) {
+                    bitmap.setPixel(x, y, if (matrix[x, y]) Color.BLACK else Color.WHITE)
+                }
+            }
+            bitmap
+        }
 
     /**
      * Lê um treino compartilhado de [input].

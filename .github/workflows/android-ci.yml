@@ -25,6 +25,12 @@ jobs:
       - name: Grant execute permission to gradlew
         run: chmod +x gradlew
 
+      - name: Run detekt
+        # Não bloqueia o build ainda: sem baseline.xml (gerar com `./gradlew detektBaseline`
+        # localmente) o detekt aponta um volume grande de achados pré-existentes.
+        continue-on-error: true
+        run: ./gradlew detekt --stacktrace
+
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --stacktrace
 

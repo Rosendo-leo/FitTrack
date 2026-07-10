@@ -560,6 +560,25 @@ private fun StrengthTab(viewModel: ProgressViewModel) {
                 }
             }
         }
+
+        if (state.rpePoints.isNotEmpty()) {
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Esforço percebido (RPE)", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Média por sessão, quando registrado nas séries",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        SimpleLineChart(
+                            points = state.rpePoints,
+                            valueFormatter = { "%.1f".format(it) }
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

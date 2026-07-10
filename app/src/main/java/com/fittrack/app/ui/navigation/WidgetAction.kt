@@ -4,4 +4,5 @@ package com.fittrack.app.ui.navigation
 sealed interface WidgetAction {
     data object RegisterWeight : WidgetAction
     data class StartWorkout(val templateId: Long?) : WidgetAction
+    data class OpenActiveSession(val sessionId: Long) : WidgetAction
 }
