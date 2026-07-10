@@ -4,16 +4,16 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 
-// ── Tema escuro — "electric indigo" sobre fundo quase-preto azulado ──────────
-val DarkPrimary = Color(0xFF7C9AFF)
-val DarkOnPrimary = Color(0xFF0A0C14)
-val DarkPrimaryContainer = Color(0xFF2A3670)
-val DarkOnPrimaryContainer = Color(0xFFDDE3FF)
+// ── Tema escuro — azul céu vibrante + ciano sobre fundo quase-preto neutro ────
+val DarkPrimary = Color(0xFF4C9EFF)
+val DarkOnPrimary = Color(0xFF06121F)
+val DarkPrimaryContainer = Color(0xFF1B3A66)
+val DarkOnPrimaryContainer = Color(0xFFD6E8FF)
 
-val DarkSecondary = Color(0xFFB49CFF)
-val DarkOnSecondary = Color(0xFF14091F)
-val DarkSecondaryContainer = Color(0xFF3B2A6B)
-val DarkOnSecondaryContainer = Color(0xFFEBE2FF)
+val DarkSecondary = Color(0xFF3FC1C9)
+val DarkOnSecondary = Color(0xFF04191A)
+val DarkSecondaryContainer = Color(0xFF124047)
+val DarkOnSecondaryContainer = Color(0xFFC7F3F5)
 
 val DarkTertiary = Color(0xFF4ADE9D)
 val DarkOnTertiary = Color(0xFF04140D)
@@ -25,20 +25,20 @@ val DarkOnError = Color(0xFF1A0505)
 val DarkErrorContainer = Color(0xFF5C1A1A)
 val DarkOnErrorContainer = Color(0xFFFFDAD6)
 
-val DarkBackground = Color(0xFF0A0C12)
-val DarkOnBackground = Color(0xFFE9ECF5)
-val DarkSurface = Color(0xFF0A0C12)
-val DarkOnSurface = Color(0xFFE9ECF5)
-val DarkSurfaceVariant = Color(0xFF1C2130)
-val DarkOnSurfaceVariant = Color(0xFF9BA3C0)
-val DarkOutline = Color(0xFF3A415C)
-val DarkOutlineVariant = Color(0xFF232941)
+val DarkBackground = Color(0xFF0A0D12)
+val DarkOnBackground = Color(0xFFE7EBEF)
+val DarkSurface = Color(0xFF0A0D12)
+val DarkOnSurface = Color(0xFFE7EBEF)
+val DarkSurfaceVariant = Color(0xFF1A2027)
+val DarkOnSurfaceVariant = Color(0xFF98A3AF)
+val DarkOutline = Color(0xFF39424C)
+val DarkOutlineVariant = Color(0xFF212830)
 
-val DarkSurfaceContainerLowest = Color(0xFF07080D)
-val DarkSurfaceContainerLow = Color(0xFF11141E)
-val DarkSurfaceContainer = Color(0xFF161A27)
-val DarkSurfaceContainerHigh = Color(0xFF1C2131)
-val DarkSurfaceContainerHighest = Color(0xFF232A3D)
+val DarkSurfaceContainerLowest = Color(0xFF060709)
+val DarkSurfaceContainerLow = Color(0xFF10141A)
+val DarkSurfaceContainer = Color(0xFF141920)
+val DarkSurfaceContainerHigh = Color(0xFF1A2029)
+val DarkSurfaceContainerHighest = Color(0xFF212832)
 
 // ── Tema claro — off-white frio com índigo profundo ──────────────────────────
 val LightPrimary = Color(0xFF4C5FE4)
